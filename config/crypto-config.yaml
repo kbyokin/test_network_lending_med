@@ -6,21 +6,24 @@ OrdererOrgs:
       - Hostname: orderer
         SANS:
           - "localhost"
-          - "127.0.0.1"
 
 PeerOrgs:
   - Name: HospitalA
-    Domain: hostpitala.example.com
+    Domain: hospitala.example.com
     EnableNodeOUs: true
     Template:
       Count: 1
+      SANS:
+        - localhost
     Users:
       Count: 1
 
   - Name: HospitalB
-    Domain: hostpitalb.example.com
+    Domain: hospitalb.example.com
     EnableNodeOUs: true
     Template:
       Count: 1
+      SANS:
+        - localhost
     Users:
       Count: 1
