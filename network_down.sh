@@ -6,3 +6,5 @@ rm -rf organizations channel-artifacts
 # Should delete the volumes as well, but this is a test network
 # so we don't care about the data
 docker volume prune -f
+docker volume ls
+docker volume rm compose_orderer.example.com compose_peer0.hospitala.example.com compose_peer0.hospitalb.example.com
