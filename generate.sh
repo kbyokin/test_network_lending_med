@@ -91,6 +91,52 @@ configtxlator proto_encode --input config_update_in_envelope.json --type common.
 cd ..
 peer channel update -f channel-artifacts/config_update_in_envelope.pb -c main-channel -o localhost:7050  --ordererTLSHostnameOverride orderer.example.com --tls --cafile "$ORDERER_CA"
 
+# Deploy chaincode
+sleep 3
+# package chaincode
+echo "Packaging chaincode"
+peer lifecycle chaincode package basic.tar.gz --path ./chaincode-typescript/ --lang node --label basic_1.0
+
+sleep 4
+echo "Installing chaincode on hospitala" 
+export CORE_PEER_LOCALMSPID=hospitalaMSP
+export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/organizations/peerOrganizations/hospitala.example.com/peers/peer0.hospitala.example.com/tls/ca.crt
+export CORE_PEER_MSPCONFIGPATH=${PWD}/organizations/peerOrganizations/hospitala.example.com/users/Admin@hospitala.example.com/msp
+export CORE_PEER_ADDRESS=localhost:7051
+peer lifecycle chaincode install basic.tar.gz
+
+sleep 4
+echo "Installing chaincode on hospitalb"
+export CORE_PEER_LOCALMSPID=hospitalbMSP
+export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/organizations/peerOrganizations/hospitalb.example.com/peers/peer0.hospitalb.example.com/tls/ca.crt
+export CORE_PEER_MSPCONFIGPATH=${PWD}/organizations/peerOrganizations/hospitalb.example.com/users/Admin@hospitalb.example.com/msp
+export CORE_PEER_ADDRESS=localhost:9051
+peer lifecycle chaincode install basic.tar.gz
+
+echo "Query chaincode package id"
+peer lifecycle chaincode queryinstalled
+# export CC_PACKAGE_ID=$(peer lifecycle chaincode queryinstalled | awk '/Package ID:/{print $3}')
+# export CC_PACKAGE_ID=basic_1.0:3df9e76769b48f7967c964794fedd28ed92e6d9aec402abe1121a52a7b2b5aba
+export CC_PACKAGE_ID=basic_1.0:71d6c563621528e696144cfee478463b9b5cd50cacceac9a33406d5b8c9ab3f6
+peer lifecycle chaincode approveformyorg -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --channelID main-channel --name basic --version 1.0 --package-id $CC_PACKAGE_ID --sequence 1 --tls --cafile "${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem"
+
+# approve chaincode
+echo "Approving chaincode on hospitala"
+export CORE_PEER_LOCALMSPID=hospitalaMSP
+export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/organizations/peerOrganizations/hospitala.example.com/peers/peer0.hospitala.example.com/tls/ca.crt
+export CORE_PEER_MSPCONFIGPATH=${PWD}/organizations/peerOrganizations/hospitala.example.com/users/Admin@hospitala.example.com/msp
+export CORE_PEER_ADDRESS=localhost:7051
+peer lifecycle chaincode approveformyorg -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --channelID main-channel --name basic --version 1.0 --package-id $CC_PACKAGE_ID --sequence 1 --tls --cafile "${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem"
+
+peer lifecycle chaincode checkcommitreadiness --channelID main-channel --name basic --version 1.0 --sequence 1 --tls --cafile "${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem" --output json
+
+peer lifecycle chaincode commit -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --channelID main-channel --name basic --version 1.0 --sequence 1 --tls --cafile "${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem" --peerAddresses localhost:7051 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/hospitala.example.com/peers/peer0.hospitala.example.com/tls/ca.crt" --peerAddresses localhost:9051 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/hospitalb.example.com/peers/peer0.hospitalb.example.com/tls/ca.crt"
+
+peer lifecycle chaincode querycommitted --channelID main-channel --name basic
+
+peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile "${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem" -C main-channel -n basic --peerAddresses localhost:7051 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/hospitala.example.com/peers/peer0.hospitala.example.com/tls/ca.crt" --peerAddresses localhost:9051 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/hospitalb.example.com/peers/peer0.hospitalb.example.com/tls/ca.crt" -c '{"function":"InitLedger","Args":[]}'
+
+
 # # Generate channel configuration transaction
 # configtxgen -profile TwoOrgsChannel -outputCreateChannelTx ./channel-artifacts/channel.tx -channelID mychannel
 
