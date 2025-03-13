@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.7.1/font/bootstrap-icons.min.css">
+    
+    
+    
+    <title>Document</title>
+
+    <style>
+        *{
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            
+        }
+        body {
+            font-size: 1.4rem;
+        }
+
+        table, th, td {
+        border:1px solid black;
+        margin: auto;
+        margin-top: 5px;
+        text-align: center;
+        
+        }
+       
+        tr{
+           
+        }
+        td{
+            background-color: rgba(225, 226, 228, 0.904);
+        }
+        th{
+            
+        }
+       tr, td ,th{
+        width: fit-content;
+        padding: 10px 20px;
+        
+       }
+        button{
+           font-size: 1rem;
+           padding: 5px;
+            
+        }
+        .row{
+            margin-top: 10px;
+        }
+       
+    </style>
+</head>
+<body>
+<!--   ปุ่ม ซ่อนให้กดเพื่อแสดง nav bar ทางซ้าย-->
+<nav class="bg-success-subtle">
+    <div class="d-flex justify-content-between align-items-center  "  >
+        <div class="ms-3 d-flex align-items-center gap-3">
+            <button class="btn btn-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#staticBackdrop" aria-controls="staticBackdrop">
+
+                <i class="bi bi-three-dots-vertical"></i>
+            </button>
+            <h2>mr.xxxx xxxxx </h2>
+        </div>
+        <div  class="ms-3">
+            <ul class="nav" style="gap: 5px; margin: 0 10px;">
+                <li class="nav-item">
+                    <button class="btn btn-outline-danger" type="button"> Post <i class="bi bi-plus-square-dotted"></i></button>
+                </li>
+                <li class="nav-item">
+                   <a href="login.html"> <button  class="btn btn-outline-secondary"> Logout <i class="bi bi-box-arrow-right"></i></button> </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+   
+      
+        <div class="offcanvas offcanvas-start" data-bs-backdrop="static" tabindex="-1" id="staticBackdrop" aria-labelledby="staticBackdropLabel">
+            <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="staticBackdropLabel">more option</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            </div>
+            <div class="offcanvas-body">
+                <div class="d-grid align-items-start">
+                    <div class="nav flex-column nav-pills me-3" id="v-pills-tab" role="tablist" aria-orientation="vertical">
+                    <button class="nav-link active" id="v-pills-home-tab" data-bs-toggle="pill" data-bs-target="#v-pills-home" type="button" role="tab" aria-controls="v-pills-home" aria-selected="true">Home</button>
+                    <button class="nav-link" id="v-pills-profile-tab" data-bs-toggle="pill" data-bs-target="#v-pills-profile" type="button" role="tab" aria-controls="v-pills-profile" aria-selected="false">Profile</button>
+                    <button class="nav-link" id="v-pills-disabled-tab" data-bs-toggle="pill" data-bs-target="#v-pills-disabled" type="button" role="tab" aria-controls="v-pills-disabled" aria-selected="false">History</button>
+                    <button class="nav-link" id="v-pills-messages-tab" data-bs-toggle="pill" data-bs-target="#v-pills-messages" type="button" role="tab" aria-controls="v-pills-messages" aria-selected="false">My Order</button>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+
+        <!-- content header อาจจะพวก สรุปหรืออะไรสักอย่าง -->
+
+        <div class="container"  >
+            <div class="d-grid justify-content-center m-3">
+                <h1>สถิติบางอย่าง</h1>
+            </div>
+            <div class=" d-flex justify-content-center gap-3 mt-3 " style="text-align: center;">
+
+                <div class=" p-3  "style="margin: auto;" >
+                    <h3>จำนวนคำขอทั้งหมด</h3>
+                    <p>Lorem, ipsum dolor.</p>
+                </div>
+                <div class=" p-3"style="margin: auto;">
+                    <h3>จำนวนคำขอทั้งหมด</h3>
+                    <p>Lorem, ipsum dolor.</p>
+                </div>
+                <div class=" p-3"style="margin: auto;">
+                    <h3>จำนวนคำขอทั้งหมด</h3>
+                    <p>Lorem, ipsum dolor.</p>
+                </div>
+
+            </div>
+
+        </div>
+       
+        <div class="row" style="max-width: 90%; margin: auto;">
+           
+            <div class="col-2" style="display: flex; gap: 5px; margin: 10px; ">
+                <label for="#">Date</label>
+                <input type="date" class="form-control" placeholder="Recipient's username" aria-label="Recipient's username" aria-describedby="button-addon2">
+                <button class="btn btn-outline-secondary" type="button" id="button-addon2">ค้นหา</button>
+              </div>
+          
+
+        </div>
+        <div style="overflow-x: auto; max-width: 90%; margin: auto;" class="row">
+            <table class="container" >
+                <thead>
+                    <tr class="bg-success-subtle " >
+                        <th>id</th>
+                        <th>ชื่อยา</th>
+                        <th>ชื่อผู้รับผิดชอบ</th>
+                        <th>เบอร์โทรผู้รับผิดชอบ</th>
+                        <th>จำนวน</th>
+                        <th>ส่งมอบภายใน</th>
+                        <th>ชื่อสังกัด</th>
+                        <th>สถานะ</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="dataList">
+                    
+                       <!-- box for data  -->
+                    
+                </tbody>
+              
+            
+            </table>
+        </div>
+    <div style="margin: 10px;">
+        <nav aria-label="Page navigation example" >
+            <ul class="pagination justify-content-center pagination-lg">
+              <li class="page-item disabled">
+                <a class="page-link">Previous</a>
+              </li>
+              <li class="page-item"><a class="page-link" href="#">1</a></li>
+              <li class="page-item"><a class="page-link" href="#">2</a></li>
+              <li class="page-item"><a class="page-link" href="#">3</a></li>
+              <li class="page-item">
+                <a class="page-link" href="#">Next</a>
+              </li>
+            </ul>
+          </nav>
+
+    </div>
+
+
+  
+  <!-- Modal -->
+  <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h1 class="modal-title fs-5" id="exampleModalLabel">Name Hospital</h1>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <!--data onclick-->
+        </div>
+
+
+        <div class="row">
+            <div class="col-6" style="text-align: end;">
+                <input type="radio" class="btn-check" name="btnradio" id="btnradio2" autocomplete="off" value="1" >
+                <label class="btn btn-outline-primary" for="btnradio2">ตอบรับทั้งหมด</label>
+            </div>
+            
+            <div class="col-6">
+                <input type="radio" class="btn-check" name="btnradio" id="btnradio3" autocomplete="off" value="2">
+                <label class="btn btn-outline-primary" for="btnradio3">ตอบรับบางส่วน</label>
+            </div>
+        
+            <!-- ส่วน allValue -->
+            <div class="row" id="allValue" style="margin-top: 10px; text-align:center; display: none;" >
+                <div class="col-6" style="flex: 1; text-align: end;" >จำนวน :</div>
+                <input type="number" id="inputAllValue" style="flex: 1; background-color: rgb(235, 157, 106); text-align:center" >
+            </div>
+        
+            <!-- ส่วน someValue -->
+            <div class="row" id="someValue" style="margin-top: 10px; text-align:center; display: none;">
+                <div class="col-6" style="flex: 1; text-align: end;">จำนวน :</div>
+                <input type="number" id="inputSomeValue" style="flex: 1; text-align:center" >
+            </div>
+        </div>
+        
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-primary" >Save changes</button>
+        </div>
+        
+    </div>
+  </div>
+     
+  
+  <script>
+    
+   const data = [
+            {
+                id: '1',
+                nameFc: 'para',
+                nameMana: 'นาย ทดสอบ คนที่1',
+                telMaba: '081-1111111',
+                address: '111/1 ถ.ทดสอบ ต.ทดสอบ อ.ทดสอบ จ.ทดสอบ 90000',
+                status: 'รอตอบรับ',
+                valueFc: '3000',
+                dateline: '01/01/2525',
+                nameCompany: 'โรงพยาบาลทดสอบ',
+                note:'ด่วนมาก',
+                
+            },
+            {
+                id: '2',
+                nameFc: 'para2',
+                nameMana: 'นาย ทดสอบ คนที่12',
+                telMaba: '081-1111112',
+                address: '111/1 ถ.ทดสอบ ต.ทดสอบ อ.ทดสอบ จ.ทดสอบ 90002',
+                status: 'รอตอบรับ',
+                valueFc: '3002',
+                dateline: '01/01/2525',
+                nameCompany: 'โรงพยาบาลทดสอบ2',
+                note:'ขอเม็ดสีแดง',
+            }
+        ];
+    
+    const dataList = document.getElementById('dataList');
+    data.forEach(item => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+        <td>${item.id}</td>
+        <td>${item.nameFc}</td>
+        <td>${item.nameMana}</td>
+        <td>${item.telMaba}</td>
+        <td>${item.valueFc}</td>
+        <td>${item.dateline}</td>
+        <td>${item.nameCompany}</td>
+        <td>${item.status}</td>
+        
+        <td>
+            <button class="btn btn-primary view-details" 
+                data-id="${item.id}" 
+                data-name="${item.nameFc}"
+                data-mana="${item.nameMana}"
+                data-tel="${item.telMaba}"
+                data-value="${item.valueFc}"
+                data-dateline="${item.dateline}"
+                data-company="${item.nameCompany}"
+                data-status="${item.status}"
+                data-address="${item.address}"
+                data-bs-toggle="modal" 
+                data-bs-target="#exampleModal">
+                Active
+            </button>
+        </td>
+        `;
+        dataList.appendChild(row);
+    });
+
+    document.querySelectorAll(".view-details").forEach(button => {
+        button.addEventListener("click", function () {
+            document.querySelector("#exampleModalLabel").textContent = this.dataset.company;
+            document.querySelector("#exampleModal .modal-body").innerHTML = `
+                <div class="row"><div class="col-6">ID:</div><div class="col-6">${this.dataset.id}</div></div>
+                <div class="row"><div class="col-6">ชื่อยา:</div><div class="col-6">${this.dataset.name}</div></div>
+                <div class="row"><div class="col-6">ชื่อผู้รับผิดชอบ:</div><div class="col-6">${this.dataset.mana}</div></div>
+                <div class="row"><div class="col-6">เบอร์โทร:</div><div class="col-6">${this.dataset.tel}</div></div>
+                <div class="row"><div class="col-6">จำนวน:</div><div class="col-6">${this.dataset.value}</div></div>
+                <div class="row"><div class="col-6">กำหนดส่ง:</div><div class="col-6">${this.dataset.dateline}</div></div>
+                <div class="row"><div class="col-6">ที่อยู่:</div><div class="col-6">${this.dataset.address}</div></div>
+                <div class="row"><div class="col-6">สถานะ:</div><div class="col-6">${this.dataset.status}</div></div>
+
+            `;
+        });
+    });
+
+   // จำลองข้อมูลจาก Model
+
+
+document.querySelectorAll(".view-details").forEach(button => {
+    button.addEventListener("click", function () {
+        document.getElementById("inputAllValue").value = this.dataset.value;
+        console.log("Set inputAllValue to:", this.dataset.value);
+        document.getElementById('inputAllValue').readOnly = true;
+    });
+});
+
+// กำหนดค่าเริ่มต้นเมื่อโหลดหน้า
+window.onload = function () {
+    if (modelData.selectedOption === '1') {
+        document.getElementById('btnradio2').checked = true;
+        document.getElementById('someValue').style.display = 'none';
+        document.getElementById('allValue').style = 'display:grid flex: 1; width:fit-content; ';
+        
+    } else if (modelData.selectedOption === '2') {
+        document.getElementById('btnradio3').checked = true;
+        document.getElementById('allValue').style.display = 'none';
+        document.getElementById('someValue').style = 'display:grid flex: 1; width:fit-content; ';
+    }
+};
+
+// กดเลือก radio button เพื่อเปลี่ยนค่า
+document.getElementById('btnradio2').addEventListener('change', function () {
+    document.getElementById('someValue').style.display = 'none';
+    document.getElementById('allValue').style = 'display:grid flex: 1; width:fit-content; ';
+    document.getElementById('inputAllValue').value = modelData.value;
+    console.log('Selected btnradio2, value:', modelData.value);
+    
+});
+
+document.getElementById('btnradio3').addEventListener('change', function () {
+    document.getElementById('allValue').style.display = 'none';
+    document.getElementById('someValue').style = 'display:grid flex: 1; width:fit-content; ';
+    console.log('Selected btnradio3');
+});
+
+
+    
+    
+    document.querySelector(".modal-footer .btn-primary").addEventListener("click", function() {
+    console.log("บันทึกข้อมูลสำเร็จ!");
+    });
+
+  </script>
+</body>
+</html>
