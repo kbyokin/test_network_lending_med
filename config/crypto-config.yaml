@@ -12,18 +12,18 @@ PeerOrgs:
     Domain: hospitala.example.com
     EnableNodeOUs: true
     Template:
-      Count: 10
+      Count: 1
       SANS:
         - localhost
     Users:
-      Count: 10
+      Count: 1
 
   - Name: HospitalB
     Domain: hospitalb.example.com
     EnableNodeOUs: true
     Template:
-      Count: 10
+      Count: 1
       SANS:
         - localhost
     Users:
-      Count: 10
+      Count: 1

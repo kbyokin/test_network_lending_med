@@ -1,6 +1,13 @@
-#!/bin/bash
 export PATH=${PWD}/bin:$PATH
 export FABRIC_CFG_PATH=${PWD}/config
+
+# Set DOCKER_SOCK
+# docker context use default
+export DOCKER_SOCK=/var/run/docker.sock
+# export DOCKER_SOCK=/run/host-services/docker.sock
+
+# Set Docker socket path for macOS
+export DOCKER_HOST=unix:///var/run/docker.sock
 
 # Generate crypto material
 cryptogen generate --config=./config/crypto-config.yaml --output="organizations"
@@ -95,11 +102,17 @@ peer channel update -f channel-artifacts/config_update_in_envelope.pb -c main-ch
 sleep 3
 # package chaincode
 echo "Packaging chaincode"
+echo $(peer version)
+# export FABRIC_CFG_PATH=../fabric-samples/config/
+echo $FABRIC_CFG_PATH
+# peer lifecycle chaincode package basic.tar.gz --path ../fabric-samples/asset-transfer-basic/chaincode-javascript/ --lang node --label basic_1.0
 peer lifecycle chaincode package basic.tar.gz --path ./chaincode-typescript/ --lang node --label basic_1.0
+# peer lifecycle chaincode package basic.tar.gz --path ${PWD}/asset-transfer-basic/chaincode-typescript/ --lang node --label basic_1.0
+# peer lifecycle chaincode package basic.tar.gz --path ${PWD}/asset-transfer-basic/chaincode-go/ --lang golang --label basic_1.0
 
 sleep 4
 echo "Installing chaincode on hospitala" 
-export CORE_PEER_LOCALMSPID=hospitalaMSP
+export CORE_PEER_LOCALMSPID="hospitalaMSP"
 export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/organizations/peerOrganizations/hospitala.example.com/peers/peer0.hospitala.example.com/tls/ca.crt
 export CORE_PEER_MSPCONFIGPATH=${PWD}/organizations/peerOrganizations/hospitala.example.com/users/Admin@hospitala.example.com/msp
 export CORE_PEER_ADDRESS=localhost:7051
@@ -107,7 +120,7 @@ peer lifecycle chaincode install basic.tar.gz
 
 sleep 4
 echo "Installing chaincode on hospitalb"
-export CORE_PEER_LOCALMSPID=hospitalbMSP
+export CORE_PEER_LOCALMSPID="hospitalbMSP"
 export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/organizations/peerOrganizations/hospitalb.example.com/peers/peer0.hospitalb.example.com/tls/ca.crt
 export CORE_PEER_MSPCONFIGPATH=${PWD}/organizations/peerOrganizations/hospitalb.example.com/users/Admin@hospitalb.example.com/msp
 export CORE_PEER_ADDRESS=localhost:9051
@@ -122,7 +135,7 @@ peer lifecycle chaincode approveformyorg -o localhost:7050 --ordererTLSHostnameO
 
 # approve chaincode
 echo "Approving chaincode on hospitala"
-export CORE_PEER_LOCALMSPID=hospitalaMSP
+export CORE_PEER_LOCALMSPID="hospitalaMSP"
 export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/organizations/peerOrganizations/hospitala.example.com/peers/peer0.hospitala.example.com/tls/ca.crt
 export CORE_PEER_MSPCONFIGPATH=${PWD}/organizations/peerOrganizations/hospitala.example.com/users/Admin@hospitala.example.com/msp
 export CORE_PEER_ADDRESS=localhost:7051
@@ -135,11 +148,4 @@ peer lifecycle chaincode commit -o localhost:7050 --ordererTLSHostnameOverride o
 peer lifecycle chaincode querycommitted --channelID main-channel --name basic
 
 peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile "${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem" -C main-channel -n basic --peerAddresses localhost:7051 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/hospitala.example.com/peers/peer0.hospitala.example.com/tls/ca.crt" --peerAddresses localhost:9051 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/hospitalb.example.com/peers/peer0.hospitalb.example.com/tls/ca.crt" -c '{"function":"InitLedger","Args":[]}'
-
-
-# # Generate channel configuration transaction
-# configtxgen -profile TwoOrgsChannel -outputCreateChannelTx ./channel-artifacts/channel.tx -channelID mychannel
-
-# # Generate anchor peer transactions
-# configtxgen -profile TwoOrgsChannel -outputAnchorPeersUpdate ./channel-artifacts/Org1MSPanchors.tx -channelID mychannel -asOrg Org1MSP
-# configtxgen -profile TwoOrgsChannel -outputAnchorPeersUpdate ./channel-artifacts/Org2MSPanchors.tx -channelID mychannel -asOrg Org2MSP
+peer chaincode query -C main-channel -n basic -c '{"Args":["GetAllAssets"]}'

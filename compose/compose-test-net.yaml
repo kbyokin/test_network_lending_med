@@ -76,6 +76,7 @@ services:
       - CORE_PEER_ID=peer0.hospitala.example.com
       - CORE_PEER_ADDRESS=peer0.hospitala.example.com:7051
       - CORE_PEER_LISTENADDRESS=0.0.0.0:7051
+      # - CORE_PEER_ADDRESSAUTODETECT=true
       - CORE_PEER_CHAINCODEADDRESS=peer0.hospitala.example.com:7052
       - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:7052
       - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.hospitala.example.com:7051
@@ -115,6 +116,7 @@ services:
       - CORE_PEER_ID=peer0.hospitalb.example.com
       - CORE_PEER_ADDRESS=peer0.hospitalb.example.com:9051
       - CORE_PEER_LISTENADDRESS=0.0.0.0:9051
+      # - CORE_PEER_ADDRESSAUTODETECT=true
       - CORE_PEER_CHAINCODEADDRESS=peer0.hospitalb.example.com:9052
       - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:9052
       - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.hospitalb.example.com:9051
