@@ -11,9 +11,9 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { TextDecoder } = require('node:util');
 
-const channelName = envOrDefault('CHANNEL_NAME', 'mychannel');
+const channelName = envOrDefault('CHANNEL_NAME', 'main-channel');
 const chaincodeName = envOrDefault('CHAINCODE_NAME', 'basic');
-const mspId = envOrDefault('MSP_ID', 'Org1MSP');
+const mspId = envOrDefault('MSP_ID', 'hospitalaMSP');
 
 // Path to crypto materials.
 const cryptoPath = envOrDefault(
@@ -23,10 +23,9 @@ const cryptoPath = envOrDefault(
         '..',
         '..',
         '..',
-        'test-network',
         'organizations',
         'peerOrganizations',
-        'org1.example.com'
+        'hospitala.example.com'
     )
 );
 
@@ -36,7 +35,7 @@ const keyDirectoryPath = envOrDefault(
     path.resolve(
         cryptoPath,
         'users',
-        'User1@org1.example.com',
+        'User1@hospitala.example.com',
         'msp',
         'keystore'
     )
@@ -48,7 +47,7 @@ const certDirectoryPath = envOrDefault(
     path.resolve(
         cryptoPath,
         'users',
-        'User1@org1.example.com',
+        'User1@hospitala.example.com',
         'msp',
         'signcerts'
     )
@@ -57,14 +56,14 @@ const certDirectoryPath = envOrDefault(
 // Path to peer tls certificate.
 const tlsCertPath = envOrDefault(
     'TLS_CERT_PATH',
-    path.resolve(cryptoPath, 'peers', 'peer0.org1.example.com', 'tls', 'ca.crt')
+    path.resolve(cryptoPath, 'peers', 'peer0.hospitala.example.com', 'tls', 'ca.crt')
 );
 
 // Gateway peer endpoint.
 const peerEndpoint = envOrDefault('PEER_ENDPOINT', 'localhost:7051');
 
 // Gateway peer SSL host name override.
-const peerHostAlias = envOrDefault('PEER_HOST_ALIAS', 'peer0.org1.example.com');
+const peerHostAlias = envOrDefault('PEER_HOST_ALIAS', 'peer0.hospitala.example.com');
 
 const utf8Decoder = new TextDecoder();
 const assetId = `asset${String(Date.now())}`;
@@ -118,7 +117,7 @@ async function main() {
         await readAssetByID(contract);
 
         // Update an asset which does not exist.
-        await updateNonExistentAsset(contract);
+        // await updateNonExistentAsset(contract);
     } finally {
         gateway.close();
         client.close();
@@ -169,7 +168,7 @@ async function initLedger(contract) {
         '\n--> Submit Transaction: InitLedger, function creates the initial set of assets on the ledger'
     );
 
-    await contract.submitTransaction('InitLedger');
+    await contract.submitTransaction('InitMedicines');
 
     console.log('*** Transaction committed successfully');
 }
@@ -182,7 +181,7 @@ async function getAllAssets(contract) {
         '\n--> Evaluate Transaction: GetAllAssets, function returns all the current assets on the ledger'
     );
 
-    const resultBytes = await contract.evaluateTransaction('GetAllAssets');
+    const resultBytes = await contract.evaluateTransaction('GetAllMedicines');
 
     const resultJson = utf8Decoder.decode(resultBytes);
     const result = JSON.parse(resultJson);
@@ -198,12 +197,16 @@ async function createAsset(contract) {
     );
 
     await contract.submitTransaction(
-        'CreateAsset',
+        'CreateMedicine',
         assetId,
-        'yellow',
-        '5',
-        'Tom',
-        '1300'
+        'testMed',
+        'B002',
+        'Merdona',
+        '202x-xx-xx',
+        '2050-20-20',
+        'Spain',
+        '20',
+        '20',
     );
 
     console.log('*** Transaction committed successfully');
@@ -218,7 +221,7 @@ async function transferAssetAsync(contract) {
         '\n--> Async Submit Transaction: TransferAsset, updates existing asset owner'
     );
 
-    const commit = await contract.submitAsync('TransferAsset', {
+    const commit = await contract.submitAsync('TransferMedicine', {
         arguments: [assetId, 'Saptha'],
     });
     const oldOwner = utf8Decoder.decode(commit.getResult());
@@ -246,7 +249,7 @@ async function readAssetByID(contract) {
     );
 
     const resultBytes = await contract.evaluateTransaction(
-        'ReadAsset',
+        'ReadMedicine',
         assetId
     );
 
