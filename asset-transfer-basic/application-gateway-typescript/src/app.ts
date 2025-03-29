@@ -13,25 +13,48 @@ import { TextDecoder } from 'util';
 
 const channelName = envOrDefault('CHANNEL_NAME', 'main-channel');
 const chaincodeName = envOrDefault('CHAINCODE_NAME', 'basic');
-const mspId = envOrDefault("MSP_ID", "hospitalaMSP");
+const mspId = envOrDefault('MSP_ID', 'hospitalaMSP');
 
 // Path to crypto materials.
-const cryptoPath = envOrDefault('CRYPTO_PATH', path.resolve(__dirname, '..', '..', '..', 'test-network', 'organizations', 'peerOrganizations', 'org1.example.com'));
+const cryptoPath = envOrDefault(
+  "CRYPTO_PATH",
+  path.resolve(
+    __dirname,
+    "..",
+    "..",
+    "..",
+    "organizations",
+    "peerOrganizations",
+    "hospitala.example.com"
+  )
+);
 
 // Path to user private key directory.
-const keyDirectoryPath = envOrDefault('KEY_DIRECTORY_PATH', path.resolve(cryptoPath, 'users', 'User1@org1.example.com', 'msp', 'keystore'));
+const keyDirectoryPath = envOrDefault(
+  "KEY_DIRECTORY_PATH",
+  path.resolve(
+    cryptoPath,
+    "users",
+    "User1@hospitala.example.com",
+    "msp",
+    "keystore"
+  )
+);
 
 // Path to user certificate directory.
-const certDirectoryPath = envOrDefault('CERT_DIRECTORY_PATH', path.resolve(cryptoPath, 'users', 'User1@org1.example.com', 'msp', 'signcerts'));
+const certDirectoryPath = envOrDefault('CERT_DIRECTORY_PATH', path.resolve(cryptoPath, 'users', 'User1@hospitala.example.com', 'msp', 'signcerts'));
 
 // Path to peer tls certificate.
-const tlsCertPath = envOrDefault('TLS_CERT_PATH', path.resolve(cryptoPath, 'peers', 'peer0.org1.example.com', 'tls', 'ca.crt'));
+const tlsCertPath = envOrDefault('TLS_CERT_PATH', path.resolve(cryptoPath, 'peers', 'peer0.hospitala.example.com', 'tls', 'ca.crt'));
 
 // Gateway peer endpoint.
 const peerEndpoint = envOrDefault('PEER_ENDPOINT', 'localhost:7051');
 
 // Gateway peer SSL host name override.
-const peerHostAlias = envOrDefault('PEER_HOST_ALIAS', 'peer0.org1.example.com');
+const peerHostAlias = envOrDefault(
+  "PEER_HOST_ALIAS",
+  "peer0.hospitala.example.com"
+);
 
 const utf8Decoder = new TextDecoder();
 const assetId = `asset${String(Date.now())}`;
@@ -70,7 +93,7 @@ async function main(): Promise<void> {
         const contract = network.getContract(chaincodeName);
 
         // Initialize a set of asset data on the ledger using the chaincode 'InitLedger' function.
-        // await initLedger(contract);
+        await initLedger(contract);
 
         // Return all the current assets on the ledger.
         await getAllAssets(contract);
@@ -131,11 +154,10 @@ async function newSigner(): Promise<Signer> {
  * This type of transaction would typically only be run once by an application the first time it was started after its
  * initial deployment. A new version of the chaincode deployed later would likely not need to run an "init" function.
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function initLedger(contract: Contract): Promise<void> {
     console.log('\n--> Submit Transaction: InitLedger, function creates the initial set of assets on the ledger');
 
-    await contract.submitTransaction('InitLedger');
+    await contract.submitTransaction("InitMedicines");
 
     console.log('*** Transaction committed successfully');
 }
@@ -146,7 +168,7 @@ async function initLedger(contract: Contract): Promise<void> {
 async function getAllAssets(contract: Contract): Promise<void> {
     console.log('\n--> Evaluate Transaction: GetAllAssets, function returns all the current assets on the ledger');
 
-    const resultBytes = await contract.evaluateTransaction('GetAllAssets');
+    const resultBytes = await contract.evaluateTransaction("GetAllMedicines");
 
     const resultJson = utf8Decoder.decode(resultBytes);
     const result: unknown = JSON.parse(resultJson);
