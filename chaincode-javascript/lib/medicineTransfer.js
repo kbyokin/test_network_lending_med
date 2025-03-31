@@ -18,18 +18,18 @@ class MedicineTransfer extends Contract {
         const medicines = [
             {
                 ID: assetId,
-                PostingDate: `${String(Date.now())}`,
-                PostingHospital: 'Songkhla Hospital',
-                MedicineName: 'Diclofenac',
-                Quantity: '30',
-                Unit: 'tab',
-                BatchNumber: 'B002',
-                Manufacturer: 'ABC Pharma',
-                ManufactureDate: `${String(Date.now())}`,
-                ExpiryDate: `${String(Date.now())}`,
-                CurrentLocation: '4000016',
-                Status: 'Available',
-            },
+                PostingDate: String(Date.now()),
+                PostingHospital: 'Hospital A',
+                MedicineName: 'Paracetamol',
+                Quantity: 100,
+                Unit: 'mg',
+                BatchNumber: 'B12345',
+                Manufacturer: 'Pharma Inc.',
+                ManufactureDate: String(Date.now()),
+                ExpiryDate: String(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year later
+                CurrentLocation: 'Warehouse A',
+                Status: 'Available'
+            }
         ];
 
         for (const asset of medicines) {
@@ -46,7 +46,7 @@ class MedicineTransfer extends Contract {
     async CreateMedicine(ctx, id, postingDate, postingHospital, medicineName, quantity, unit, batchNumber, manufacturer, manufacturerDate, expiryDate, currentLocation, status) {
         const exists = await this.MedicineExists(ctx, id);
         if (exists) {
-            throw new Error(`The asset ${id} already exists`);
+            throw new Error(`The asset ${id} does not exist`);
         }
 
         const asset = {
