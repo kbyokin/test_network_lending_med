@@ -128,10 +128,8 @@ peer lifecycle chaincode install basic.tar.gz
 
 echo "Query chaincode package id"
 peer lifecycle chaincode queryinstalled
-# export CC_PACKAGE_ID=$(peer lifecycle chaincode queryinstalled | awk '/Package ID:/{print $3}')
-# export CC_PACKAGE_ID=basic_1.0:3df9e76769b48f7967c964794fedd28ed92e6d9aec402abe1121a52a7b2b5aba
-# export CC_PACKAGE_ID=basic_1.0:71d6c563621528e696144cfee478463b9b5cd50cacceac9a33406d5b8c9ab3f6
-export CC_PACKAGE_ID=basic_1.0:69388a13d49501263f35b1dfcde598e985ff38f31def17be4c76cba782045deb
+export CC_PACKAGE_ID=$(peer lifecycle chaincode queryinstalled | grep "Package ID:" | sed -E 's/Package ID: (.*), Label:.*/\1/')
+echo "CC_PACKAGE_ID: $CC_PACKAGE_ID"
 peer lifecycle chaincode approveformyorg -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --channelID main-channel --name basic --version 1.0 --package-id $CC_PACKAGE_ID --sequence 1 --tls --cafile "${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem"
 
 # approve chaincode
@@ -149,4 +147,5 @@ peer lifecycle chaincode commit -o localhost:7050 --ordererTLSHostnameOverride o
 peer lifecycle chaincode querycommitted --channelID main-channel --name basic
 
 peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile "${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem" -C main-channel -n basic --peerAddresses localhost:7051 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/hospitala.example.com/peers/peer0.hospitala.example.com/tls/ca.crt" --peerAddresses localhost:9051 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/hospitalb.example.com/peers/peer0.hospitalb.example.com/tls/ca.crt" -c '{"function":"InitMedicines","Args":[]}'
+sleep3
 peer chaincode query -C main-channel -n basic -c '{"Args":["GetAllMedicines"]}'

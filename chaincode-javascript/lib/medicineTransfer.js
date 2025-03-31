@@ -14,22 +14,26 @@ const { Contract } = require('fabric-contract-api');
 class MedicineTransfer extends Contract {
 
     async InitMedicines(ctx) {
+        const assetId = `asset${String(Date.now())}`;
         const medicines = [
             {
-                ID: 'med1',
-                Name: 'Aspirin',
-                BatchNumber: 'B001',
-                Manufacturer: 'PharmaCorp',
-                ManufactureDate: '2025-01-15',
-                ExpiryDate: '2027-01-15',
-                CurrentLocation: 'Warehouse A',
-                Temperature: '25C',
-                Price: 15,
+                ID: assetId,
+                PostingDate: `${String(Date.now())}`,
+                PostingHospital: 'Songkhla Hospital',
+                MedicineName: 'Diclofenac',
+                Quantity: '30',
+                Unit: 'tab',
+                BatchNumber: 'B002',
+                Manufacturer: 'ABC Pharma',
+                ManufactureDate: `${String(Date.now())}`,
+                ExpiryDate: `${String(Date.now())}`,
+                CurrentLocation: '4000016',
+                Status: 'Available',
             },
         ];
 
         for (const asset of medicines) {
-            asset.docType = 'medicine';
+            // asset.docType = 'medicine';
             // example of how to write to world state deterministically
             // use convetion of alphabetic order
             // we insert data in alphabetic order using 'json-stringify-deterministic' and 'sort-keys-recursive'
@@ -39,7 +43,7 @@ class MedicineTransfer extends Contract {
     }
 
     // CreateAsset issues a new asset to the world state with given details.
-    async CreateMedicine(ctx, id, name, batchNumber, manufacturer, manufacturerDate, expiryDate, currentLocation, temperature, price) {
+    async CreateMedicine(ctx, id, postingDate, postingHospital, medicineName, quantity, unit, batchNumber, manufacturer, manufacturerDate, expiryDate, currentLocation, status) {
         const exists = await this.MedicineExists(ctx, id);
         if (exists) {
             throw new Error(`The asset ${id} already exists`);
@@ -47,17 +51,20 @@ class MedicineTransfer extends Contract {
 
         const asset = {
             ID: id,
-            Name: name,
+            PostingDate: postingDate,
+            PostingHospital: postingHospital,
+            MedicineName: medicineName,
+            Quantity: quantity,
+            Unit: unit,
             BatchNumber: batchNumber,
             Manufacturer: manufacturer,
             ManufactureDate: manufacturerDate,
             ExpiryDate: expiryDate,
             CurrentLocation: currentLocation,
-            Temperature: temperature,
-            Price: price,
+            Status: status
         };
         // we insert data in alphabetic order using 'json-stringify-deterministic' and 'sort-keys-recursive'
-        await ctx.stub.putState(id, Buffer.from(stringify(sortKeysRecursive(asset))));
+        await ctx.stub.putState(id, Buffer.from(stringify(asset)));
         return JSON.stringify(asset);
     }
 
@@ -90,7 +97,7 @@ class MedicineTransfer extends Contract {
             Price: price,
         };
         // we insert data in alphabetic order using 'json-stringify-deterministic' and 'sort-keys-recursive'
-        return ctx.stub.putState(id, Buffer.from(stringify(sortKeysRecursive(updatedAsset))));
+        return ctx.stub.putState(id, Buffer.from(stringify(updatedAsset)));
     }
 
     // DeleteAsset deletes an given asset from the world state.
