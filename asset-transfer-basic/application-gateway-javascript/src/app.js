@@ -101,20 +101,20 @@ async function main() {
         // Get the smart contract from the network.
         const contract = network.getContract(chaincodeName);
 
-        // Initialize a set of asset data on the ledger using the chaincode 'InitLedger' function.
-        await initLedger(contract);
+        // // Initialize a set of asset data on the ledger using the chaincode 'InitLedger' function.
+        // await initLedger(contract);
 
-        // Return all the current assets on the ledger.
-        await getAllAssets(contract);
+        // // Return all the current assets on the ledger.
+        // await getAllAssets(contract);
 
-        // Create a new asset on the ledger.
+        // // Create a new asset on the ledger.
         await createAsset(contract);
 
-        // Update an existing asset asynchronously.
-        await transferAssetAsync(contract);
+        // // Update an existing asset asynchronously.
+        // await transferAssetAsync(contract);
 
-        // Get the asset details by assetID.
-        await readAssetByID(contract);
+        // // Get the asset details by assetID.
+        // await readAssetByID(contract);
 
         // Update an asset which does not exist.
         // await updateNonExistentAsset(contract);
@@ -199,14 +199,17 @@ async function createAsset(contract) {
     await contract.submitTransaction(
         'CreateMedicine',
         assetId,
-        'testMed',
-        'B002',
-        'Merdona',
-        '202x-xx-xx',
-        '2050-20-20',
-        'Spain',
-        '20',
-        '20',
+        String(Date.now()),
+        'Rama9 Hospital',
+        'Mefenamic Acid',
+        '50',
+        'pill',
+        'AC334',
+        'Pfizer',
+        String(Date.now()),
+        String(Date.now() + 365),
+        'Bangkok',
+        'Available'
     );
 
     console.log('*** Transaction committed successfully');

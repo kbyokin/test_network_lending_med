@@ -1,2 +1,2 @@
-./crypto-config
-./bin
+wallet
+!wallet/.gitkeep
