@@ -14,21 +14,160 @@ const { Contract } = require('fabric-contract-api');
 class MedicineTransfer extends Contract {
 
     async InitMedicines(ctx) {
-        const assetId = `asset${String(Date.now())}`;
         const medicines = [
             {
-                ID: assetId,
-                PostingDate: String(Date.now()),
+                ID: 'medicine1',
+                PostingDate: '1743572230267',
                 PostingHospital: 'Hospital A',
                 MedicineName: 'Paracetamol',
                 Quantity: 100,
                 Unit: 'mg',
                 BatchNumber: 'B12345',
                 Manufacturer: 'Pharma Inc.',
-                ManufactureDate: String(Date.now()),
-                ExpiryDate: String(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year later
+                ManufactureDate: '1743572230245',
+                ExpiryDate: '1743572230567', // 1 year later
                 CurrentLocation: 'Warehouse A',
-                Status: 'Available'
+                Status: 'Available',
+                BorrowRecords: [],
+                ShipmentDetails: []
+            },
+            {
+                ID: 'MED-002',
+                PostingDate: '1743572230567', // 7 days ago
+                PostingHospital: 'Hospital B',
+                MedicineName: 'Amoxicillin',
+                Quantity: 250,
+                Unit: 'mg',
+                BatchNumber: 'B67890',
+                Manufacturer: 'MediCorp',
+                ManufactureDate: '1743572230567', // 90 days ago
+                ExpiryDate: '1743572230567', // 2 years later
+                CurrentLocation: 'Pharmacy',
+                Status: 'In Use',
+                BorrowRecords: [
+                    {
+                        BorrowDate: '1743572230567',
+                        BorrowedBy: 'Dr. Smith',
+                        Purpose: 'Emergency Department',
+                        QuantityBorrowed: 50,
+                        ReturnDate: '1743572230567'
+                    }
+                ],
+                ShipmentDetails: [
+                    {
+                        ShipmentDate: '1743572230567',
+                        ShippedFrom: 'Central Warehouse',
+                        ShippedTo: 'Hospital B',
+                        Carrier: 'MedEx Logistics',
+                        TrackingNumber: 'SHP12345'
+                    }
+                ]
+            },
+            {
+                ID: 'MED-003',
+                PostingDate: '1743572230567', // 14 days ago
+                PostingHospital: 'Hospital C',
+                MedicineName: 'Lisinopril',
+                Quantity: 10,
+                Unit: 'mg',
+                BatchNumber: 'L54321',
+                Manufacturer: 'CardioPharm',
+                ManufactureDate: '1743572230567', // 120 days ago
+                ExpiryDate: '1743572230567', // 1.5 years later
+                CurrentLocation: 'Cardiology Department',
+                Status: 'Limited Stock',
+                BorrowRecords: [],
+                ShipmentDetails: [
+                    {
+                        ShipmentDate: '1743572230567',
+                        ShippedFrom: 'Manufacturer Warehouse',
+                        ShippedTo: 'Hospital C',
+                        Carrier: 'PharmaShip',
+                        TrackingNumber: 'PS78901'
+                    }
+                ]
+            },
+            {
+                ID: 'MED-004',
+                PostingDate: '1743572230567', // 3 days ago
+                PostingHospital: 'Hospital A',
+                MedicineName: 'Insulin Glargine',
+                Quantity: 100,
+                Unit: 'units/ml',
+                BatchNumber: 'I98765',
+                Manufacturer: 'DiabeCare',
+                ManufactureDate: '1743572230567', // 45 days ago
+                ExpiryDate: '1743572230567', // 6 months later
+                CurrentLocation: 'Cold Storage',
+                Status: 'Available',
+                BorrowRecords: [],
+                ShipmentDetails: [
+                    {
+                        ShipmentDate: '1743572230567',
+                        ShippedFrom: 'DiabeCare Distribution Center',
+                        ShippedTo: 'Hospital A',
+                        Carrier: 'ColdChain Logistics',
+                        TrackingNumber: 'CC24680',
+                        Temperature: '2-8°C'
+                    }
+                ]
+            },
+            {
+                ID: 'MED-005',
+                PostingDate: '1743572230567', // 30 days ago
+                PostingHospital: 'Hospital D',
+                MedicineName: 'Metformin',
+                Quantity: 500,
+                Unit: 'mg',
+                BatchNumber: 'M13579',
+                Manufacturer: 'GeneriPharm',
+                ManufactureDate: '1743572230567', // 180 days ago
+                ExpiryDate: '1743572230567', // 2.5 years later
+                CurrentLocation: 'Outpatient Pharmacy',
+                Status: 'Available',
+                BorrowRecords: [
+                    {
+                        BorrowDate: '1743572230567',
+                        BorrowedBy: 'Dr. Johnson',
+                        Purpose: 'Clinical Trial',
+                        QuantityBorrowed: 100,
+                        ReturnDate: null
+                    }
+                ],
+                ShipmentDetails: [
+                    {
+                        ShipmentDate: '1743572230567',
+                        ShippedFrom: 'Regional Distribution Center',
+                        ShippedTo: 'Hospital D',
+                        Carrier: 'MedLogistics',
+                        TrackingNumber: 'ML97531'
+                    }
+                ]
+            },
+            {
+                ID: 'MED-006',
+                PostingDate: '1743572230567', // 1 day ago
+                PostingHospital: 'Hospital B',
+                MedicineName: 'Morphine Sulfate',
+                Quantity: 15,
+                Unit: 'mg/ml',
+                BatchNumber: 'MS24680',
+                Manufacturer: 'PainRelief Pharmaceuticals',
+                ManufactureDate: '1743572230567', // 60 days ago
+                ExpiryDate: '1743572230567', // 2 years later
+                CurrentLocation: 'Secured Storage',
+                Status: 'Controlled Substance',
+                BorrowRecords: [],
+                ShipmentDetails: [
+                    {
+                        ShipmentDate: '1743572230567',
+                        ShippedFrom: 'Central Pharmacy',
+                        ShippedTo: 'Hospital B',
+                        Carrier: 'SecureTransport',
+                        TrackingNumber: 'ST36912',
+                        SecurityProtocol: 'Level 3'
+                    }
+                ]
             }
         ];
 
@@ -61,10 +200,54 @@ class MedicineTransfer extends Contract {
             ManufactureDate: manufacturerDate,
             ExpiryDate: expiryDate,
             CurrentLocation: currentLocation,
-            Status: status
+            Status: status,
+            BorrowRecords: [],
+            ShipmentDetails: [],
         };
         // we insert data in alphabetic order using 'json-stringify-deterministic' and 'sort-keys-recursive'
         await ctx.stub.putState(id, Buffer.from(stringify(asset)));
+        return JSON.stringify(asset);
+    }
+
+    async BorrowMedicine(ctx, id, borrowID, borrowingHospital, requestedQuantity, borrowDate) {
+        const exists = await this.MedicineExists(ctx, id);
+        if (!exists) {
+            throw new Error(`The asset ${id} does not exist`);
+        }
+        const assetString = await this.ReadMedicine(ctx, id);
+        const asset = JSON.parse(assetString);
+        const requestedQty = parseInt(requestedQuantity, 10);
+        if (asset.Quantity < requestedQty) {
+            throw new Error(`Not enough quantity available for borrowing. Available: ${asset.Quantity}, Requested: ${requestedQuantity}`);
+        }
+        asset.Quantity -= requestedQty;
+        const borrowRecord = {
+            BorrowID: borrowID,
+            BorrowingHospital: borrowingHospital,
+            RequestedQuantity: requestedQty,
+            BorrowDate: borrowDate,
+            Status: 'Borrowed',
+        };
+        asset.BorrowRecords.push(borrowRecord);
+        await ctx.stub.putState(id, Buffer.from(stringify(sortKeysRecursive(asset))));
+        return JSON.stringify(asset);
+    }
+
+    async ShipmentUpdates(ctx, id, statusDate, shipmentStatus) {
+        const shipmentID = `shipment${String(Date.now())}`;
+        const exists = await this.MedicineExists(ctx, id);
+        if (!exists) {
+            throw new Error(`The asset ${id} does not exist`);
+        }
+        const assetString = await this.ReadMedicine(ctx, id);
+        const asset = JSON.parse(assetString);
+        const shipmentRecord = {
+            ShipmentID: shipmentID,
+            StatusDate: statusDate,
+            ShipmentStatus: shipmentStatus,
+        };
+        asset.ShipmentDetails.push(shipmentRecord);
+        await ctx.stub.putState(id, Buffer.from(stringify(sortKeysRecursive(asset))));
         return JSON.stringify(asset);
     }
 
