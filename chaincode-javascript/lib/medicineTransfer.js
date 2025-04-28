@@ -483,118 +483,31 @@ class MedicineTransfer extends Contract {
         return this.request.CreateRequest(ctx, requestData, hospitalList);
     }
 
+    async CreateMedicineResponse(ctx, responseData) {
+        const data = JSON.parse(responseData);
+        // Check if responseId exists
+        const exists = await this.MedicineExists(ctx, data.responseId);
+        if (!exists) {
+            throw new Error(`The response ${data.responseId} does not exist`);
+        }
+        const assetString = await this.ReadMedicine(ctx, data.responseId);
+        const asset = JSON.parse(assetString);
+        asset.status = responseData.status;
+        asset.updatedAt = data.updatedAt;
+        asset.offeredMedicine = data.offeredMedicine;
+        await ctx.stub.putState(asset.id, Buffer.from(stringify(sortKeysRecursive(asset))));
+        return JSON.stringify({
+            responseId: data.responseId,
+            updatedAt: data.updatedAt
+        });
+    }
+
     async ReadAssetById(ctx, id) {
         const ledgerJSON = await ctx.stub.getState(id); // get the asset from chaincode state
         if (!ledgerJSON || ledgerJSON.length === 0) {
             throw new Error(`The asset ${id} does not exist`);
         }
         return ledgerJSON.toString();
-    }
-
-    /*
-    Create new medicine response
-    */
-    async CreateMedicineResponse(ctx, responseData) {
-        const data = JSON.parse(responseData);
-        const response = {
-            id: data.id,
-            requestId: data.requestId,
-            resposeId: data.responseId,
-            respondingHospitalId: data.respondingHospitalId,
-            createdAt: data.createdAt,
-            updatedAt: data.updatedAt,
-            status: data.status,
-            offeredMedicine: {
-                name: data.name,
-                manufacturer: data.manufacturer,
-                expiryDate: data.expiryDate,
-                quantity: data.quantity,
-                pricePerUnit: data.pricePerUnit,
-                returnTerm: {
-                    sameUnit: data.sameUnit,
-                    subsidiary: data.subsidiary,
-                    sameValue: data.sameValue,
-                    other: data.other,
-                    notes: data.notes
-                }
-            }
-        };
-        await ctx.stub.putState(response.id, Buffer.from(stringify(sortKeysRecursive(response))));
-        return JSON.stringify(response);
-    }
-
-    /*
-    Read medicine response
-    */
-    async ReadMedicineResponse(ctx, id, responseHospitalId) {
-        const responseJSON = await ctx.stub.getState(id); // get the asset from chaincode state
-        if (!responseJSON || responseJSON.length === 0) {
-            throw new Error(`The asset ${id} does not exist`);
-        }
-        return responseJSON.toString();
-    }
-
-    /*
-    Create new transfer
-    */
-    async CreateMedicineTransfer(ctx, transferData) {
-        const data = JSON.parse(transferData);
-        const transfer = {
-            id: data.id,
-            requestId: data.requestId,
-            responseId: data.responseId,
-            transferId: data.transferId,
-            fromHospitalId: data.fromHospitalId,
-            createdAt: data.createdAt,
-            updatedAt: data.updatedAt,
-            status: data.status,
-            shipmentDetails: {
-                trackingNumber: data.trackingNumber,
-                carrier: data.carrier,
-                shippedFrom: data.shippedFrom,
-                shippedTo: data.shippedTo,
-                shipmentDate: data.shipmentDate
-            }
-        };
-        await ctx.stub.putState(transfer.id, Buffer.from(stringify(sortKeysRecursive(transfer))));
-        return JSON.stringify(transfer);
-    }
-
-    async CreateMedicineReturn(ctx, returnData) {
-        const data = JSON.parse(returnData);
-        const returnMedicine = {
-            id: data.id,
-            requestId: data.requestId,
-            responseId: data.responseId,
-            transferId: data.transferId,
-            returnId: data.returnId,
-            fromHospitalId: data.fromHospitalId,
-            toHospitalId: data.toHospitalId,
-            createdAt: data.createdAt,
-            updatedAt: data.updatedAt,
-            status: data.status,
-            returnMedicine: {
-                name: data.name,
-                manufacturer: data.manufacturer,
-                expiryDate: data.expiryDate,
-                quantity: data.quantity,
-                pricePerUnit: data.pricePerUnit
-            }
-        };
-        await ctx.stub.putState(returnMedicine.id, Buffer.from(stringify(sortKeysRecursive(returnMedicine))));
-        return JSON.stringify(returnMedicine);
-    }
-
-    /*
-    Update resquest status
-    */
-    async UpdateMedicineRequestStatus(ctx, id, status) {
-        const ledgerString = await this.ReadLedger(ctx, id);
-        const ledger = JSON.parse(ledgerString);
-        ledger.status = status;
-        ledger.updatedAt = String(Date.now());
-        await ctx.stub.putState(id, Buffer.from(stringify(sortKeysRecursive(ledger))));
-        return JSON.stringify(ledger);
     }
 
     // CreateAsset issues a new asset to the world state with given details.
