@@ -10,11 +10,122 @@
 const stringify = require('json-stringify-deterministic');
 const sortKeysRecursive = require('sort-keys-recursive');
 const { Contract } = require('fabric-contract-api');
+const RequestFunctions = require('./request');
+
+const hospitalEntities = [
+    {
+        nameTH: 'โีรงพยาบาลหาดใหญ่',
+        nameEN: 'Hat Yai Hospital',
+        id: 'hatyaiHospitalMSP',
+        address: '123 Main St, City A',
+    },
+    {
+        nameTH: 'โีรงพยาบาลสงขลา',
+        nameEN: 'Songkhla Hospital',
+        id: 'songkhlaHospitalMSP',
+        address: '123 Main St, City A',
+    },
+    {
+        nameTH: 'โีรงพยาบาลนาหม่อม',
+        nameEN: 'Na Mom Hospital',
+        id: 'namomHospitalMSP',
+        address: '456 Elm St, City B',
+    },
+    {
+        nameTH: 'โีรงพยาบาลสิงหนคร',
+        nameEN: 'Singha Nakhon Hospital',
+        id: 'singhanakohnHospitalMSP',
+        address: '789 Oak St, City C',
+    },
+];
 
 class MedicineTransfer extends Contract {
 
+    constructor() {
+        super();
+        this.request = new RequestFunctions();
+    }
+
     async InitMedicines(ctx) {
-        const medicines = [
+        const _medicines = [
+            {
+                id: 'medicine1',
+                postingDate: '1743572230267',
+                postingHospital: 'Hat Yai Hospital',
+                status: 'Available',
+                urgent: true,
+                medicine: {
+                    name: 'Paracetamol',
+                    quantity: 100,
+                    unit: 'mg',
+                    batchNumber: 'B12345',
+                    manufacturer: 'Pharma Inc.',
+                    manufactureDate: '1743572230245',
+                    expiryDate: '1743572230567',
+                    image: 'base64encodedstring'
+                },
+                request: {
+                    expectedReturnDate: '1743572230567', // Unix timestamp
+                    receiveConditions: {
+                        exactType: false,
+                        subsidiary: true,
+                        other: true
+                    }
+                },
+                responses: [
+                    {
+                        hospitalId: 'hospital-b',
+                        hospitalName: 'Hospital B',
+                        status: 'Accepted',
+                        offer: {
+                            medicineName: 'ParacetamolF',
+                            manufacturer: 'A',
+                            expiryDate: '1743572230567',
+                            quantity: 45,
+                            pricePerUnit: 300,
+                            returnConditions: {
+                                sameUnit: false,
+                                subsidiary: true,
+                                sameValue: true,
+                                other: true
+                            }
+                        },
+                        return: {
+                            status: 'Completed',
+                            option: 'Subsidiary',
+                            details: {
+                                medicineName: 'ParacetamolW',
+                                manufacturer: 'AB',
+                                expiryDate: '1743572230567',
+                                quantity: 45,
+                                pricePerUnit: 290
+                            }
+                        }
+                    },
+                    {
+                        hospitalId: 'hospital-c',
+                        hospitalName: 'Hospital C',
+                        status: 'Rejected',
+                        offer: null,
+                        return: {
+                            status: null,
+                            option: null,
+                            details: null
+                        }
+                    },
+                    {
+                        hospitalId: 'hospital-d',
+                        hospitalName: 'Hospital D',
+                        status: 'Pending',
+                        offer: null,
+                        return: {
+                            status: 'Pending',
+                            option: null,
+                            details: null
+                        }
+                    }
+                ]
+            },
             {
                 ID: 'medicine1',
                 PostingDate: '1743572230267',
@@ -171,14 +282,319 @@ class MedicineTransfer extends Contract {
             }
         ];
 
-        for (const asset of medicines) {
+        const ledgers = [
+            {
+                id: 'medicine1_test',
+                requestId: 'REQ-0001-123',
+                postingHospitalId: hospitalEntities[0].id,
+                postingHospitalNameEN: hospitalEntities[0].nameEN,
+                postingHospitalNameTH: hospitalEntities[0].nameTH,
+                postingHospitalAddress: hospitalEntities[0].address,
+                status: 'Open',
+                createdAt: '1743572230567',
+                updatedAt: '1743572230567',
+                urgent: true,
+                requestMedicine: {
+                    name: 'Paracetamol',
+                    trademark: 'Adrenaline Injection',
+                    quantity: 100,
+                    pricePerUnit: 150,
+                    unit: '1mg/1ml',
+                    batchNumber: 'B12345',
+                    manufacturer: 'Pharma Inc.',
+                    manufactureDate: '1743572230567',
+                    expiryDate: '1743572230567',
+                    imageRef: 'base64encodedstring'
+                },
+                requestTerm: {
+                    expectedReturnDate: '1743572230567',
+                    receiveConditions: {
+                        exactType: false,
+                        subsidiary: true,
+                        other: true,
+                        notes: 'Equivalent brands also acceptable'
+                    }
+                }
+            },
+            {
+                id: 'medicine2_test',
+                requestId: 'REQ-0002-123',
+                postingHospitalId: hospitalEntities[1].id,
+                postingHospitalNameEN: hospitalEntities[1].nameEN,
+                postingHospitalNameTH: hospitalEntities[1].nameTH,
+                postingHospitalAddress: hospitalEntities[1].address,
+                status: 'Open',
+                createdAt: '1743572230567',
+                updatedAt: '1743572230567',
+                urgent: true,
+                requestMedicine: {
+                    name: 'Ardenaline',
+                    quantity: 100,
+                    unit: 'mg',
+                    batchNumber: 'B12345',
+                    manufacturer: 'Pharma Inc.',
+                    manufactureDate: '1743572230567',
+                    expiryDate: '1743572230567',
+                    imageRef: 'base64encodedstring'
+                },
+                requestTerm: {
+                    expectedReturnDate: '1743572230567',
+                    receiveConditions: {
+                        exactType: false,
+                        subsidiary: true,
+                        other: true,
+                        notes: 'Equivalent brands also acceptable'
+                    }
+                }
+            },
+            {
+                id: 'respond-0002_xxxx1',
+                responseId: 'RESP-0002-456',
+                requestId: 'medicine1_test',
+                respondingHospitalId: hospitalEntities[1].id,
+                respondingHospitalNameEN: hospitalEntities[1].nameEN,
+                respondingHospitalNameTH: hospitalEntities[1].nameTH,
+                respondingHospitalAddress: hospitalEntities[1].address,
+                createdAt: '1743572230567',
+                updatedAt: '1743572230567',
+                status: 'Accepted',
+                offeredMedicine: {
+                    name: 'ParacetamolF',
+                    manufacturer: 'A',
+                    expiryDate: '1743572230567',
+                    quantity: 45,
+                    pricePerUnit: 300,
+                    returnTerm: {
+                        sameUnit: false,
+                        subsidiary: true,
+                        sameValue: true,
+                        other: true,
+                        notes: 'Equivalent brands also acceptable'
+                    }
+                },
+            },
+            {
+                id: 'respond-0003_xxxx1',
+                responseId: 'RESP-0003-789',
+                requestId: 'medicine1_test',
+                respondingHospitalId: hospitalEntities[2].id,
+                respondingHospitalNameEN: hospitalEntities[2].nameEN,
+                respondingHospitalNameTH: hospitalEntities[2].nameTH,
+                respondingHospitalAddress: hospitalEntities[2].address,
+                createdAt: '1743572230567',
+                updatedAt: '1743572230567',
+                status: 'Pending',
+                offeredMedicine: null,
+                returnMedicine: null
+            },
+            {
+                id: 'respond-0003_xxxx2',
+                responseId: 'RESP-0003-799',
+                requestId: 'medicine2_test',
+                respondingHospitalId: hospitalEntities[2].id,
+                respondingHospitalNameEN: hospitalEntities[2].nameEN,
+                respondingHospitalNameTH: hospitalEntities[2].nameTH,
+                respondingHospitalAddress: hospitalEntities[2].address,
+                createdAt: '1743572230567',
+                updatedAt: '1743572230567',
+                status: 'Pending',
+                offeredMedicine: null,
+                returnMedicine: null
+            },
+            {
+                id: 'respond-0004_xxxx1',
+                responseId: 'RESP-0004-101112',
+                requestId: 'medicine1_test',
+                respondingHospitalId: hospitalEntities[3].id,
+                respondingHospitalNameEN: hospitalEntities[3].nameEN,
+                respondingHospitalNameTH: hospitalEntities[3].nameTH,
+                respondingHospitalAddress: hospitalEntities[3].address,
+                createdAt: '1743572230567',
+                updatedAt: '1743572230567',
+                status: 'Rejected',
+                offeredMedicine: null,
+                returnMedicine: null
+            },
+            {
+                id: 'transfer-0001-131415',
+                requestId: 'medicine1_test',
+                responseId: 'RESP-0001-456',
+                transferId: 'TRANS-0001-131415',
+                fromHospitalId: hospitalEntities[0].id,
+                fromHospitalNameEN: hospitalEntities[0].nameEN,
+                fromHospitalNameTH: hospitalEntities[0].nameTH,
+                fromHospitalAddress: hospitalEntities[0].address,
+                toHospitalId: hospitalEntities[1].id,
+                toHospitalNameEN: hospitalEntities[1].nameEN,
+                toHospitalNameTH: hospitalEntities[1].nameTH,
+                toHospitalAddress: hospitalEntities[1].address,     // need to make it more dynamic later
+                createdAt: '1743572230567',
+                status: 'Completed',
+                shipmentDetails: {
+                    trackingNumber: 'SHP12345',
+                    carrier: 'MedEx Logistics',
+                    shippedFrom: 'Central Warehouse',
+                    shippedTo: 'Hospital B',
+                    shipmentDate: '1743572230567'
+                },
+            },
+            {
+                id: 'return-0001-161718',
+                requestId: 'medicine1_test',
+                responseId: 'RESP-0002-456',
+                transferId: 'TRANS-0001-131415',
+                returnId: 'RETR-0001-161718',
+                fromHospitalId: hospitalEntities[1].id,
+                fromHospitalNameEN: hospitalEntities[1].nameEN,
+                fromHospitalNameTH: hospitalEntities[1].nameTH,
+                fromHospitalAddress: hospitalEntities[1].address,
+                toHospitalId: hospitalEntities[0].id,
+                toHospitalNameEN: hospitalEntities[0].nameEN,
+                toHospitalNameTH: hospitalEntities[0].nameTH,
+                toHospitalAddress: hospitalEntities[0].address,     // need to make it more dynamic later
+                createdAt: '1743572230567',
+                status: 'Pending',
+                returnMedicine: {
+                    name: 'ParacetamolW',
+                    manufacturer: 'AB',
+                    expiryDate: '1743572230567',
+                    quantity: 45,
+                    pricePerUnit: 290
+                },
+            }
+        ];
+
+        for (const asset of ledgers) {
             // asset.docType = 'medicine';
             // example of how to write to world state deterministically
             // use convetion of alphabetic order
             // we insert data in alphabetic order using 'json-stringify-deterministic' and 'sort-keys-recursive'
             // when retrieving data, in any lang, the order of data will be the same and consequently also the corresonding hash
-            await ctx.stub.putState(asset.ID, Buffer.from(stringify(sortKeysRecursive(asset))));
+            await ctx.stub.putState(asset.id, Buffer.from(stringify(sortKeysRecursive(asset))));
         }
+    }
+
+    // =========================== Request Functions ==========================
+
+    /*
+    Create new medicine request
+    */
+    async CreateMedicineRequest(ctx, requestData, hospitalList) {
+        return this.request.CreateRequest(ctx, requestData, hospitalList);
+    }
+
+    async ReadAssetById(ctx, id) {
+        const ledgerJSON = await ctx.stub.getState(id); // get the asset from chaincode state
+        if (!ledgerJSON || ledgerJSON.length === 0) {
+            throw new Error(`The asset ${id} does not exist`);
+        }
+        return ledgerJSON.toString();
+    }
+
+    /*
+    Create new medicine response
+    */
+    async CreateMedicineResponse(ctx, responseData) {
+        const data = JSON.parse(responseData);
+        const response = {
+            id: data.id,
+            requestId: data.requestId,
+            resposeId: data.responseId,
+            respondingHospitalId: data.respondingHospitalId,
+            createdAt: data.createdAt,
+            updatedAt: data.updatedAt,
+            status: data.status,
+            offeredMedicine: {
+                name: data.name,
+                manufacturer: data.manufacturer,
+                expiryDate: data.expiryDate,
+                quantity: data.quantity,
+                pricePerUnit: data.pricePerUnit,
+                returnTerm: {
+                    sameUnit: data.sameUnit,
+                    subsidiary: data.subsidiary,
+                    sameValue: data.sameValue,
+                    other: data.other,
+                    notes: data.notes
+                }
+            }
+        };
+        await ctx.stub.putState(response.id, Buffer.from(stringify(sortKeysRecursive(response))));
+        return JSON.stringify(response);
+    }
+
+    /*
+    Read medicine response
+    */
+    async ReadMedicineResponse(ctx, id, responseHospitalId) {
+        const responseJSON = await ctx.stub.getState(id); // get the asset from chaincode state
+        if (!responseJSON || responseJSON.length === 0) {
+            throw new Error(`The asset ${id} does not exist`);
+        }
+        return responseJSON.toString();
+    }
+
+    /*
+    Create new transfer
+    */
+    async CreateMedicineTransfer(ctx, transferData) {
+        const data = JSON.parse(transferData);
+        const transfer = {
+            id: data.id,
+            requestId: data.requestId,
+            responseId: data.responseId,
+            transferId: data.transferId,
+            fromHospitalId: data.fromHospitalId,
+            createdAt: data.createdAt,
+            updatedAt: data.updatedAt,
+            status: data.status,
+            shipmentDetails: {
+                trackingNumber: data.trackingNumber,
+                carrier: data.carrier,
+                shippedFrom: data.shippedFrom,
+                shippedTo: data.shippedTo,
+                shipmentDate: data.shipmentDate
+            }
+        };
+        await ctx.stub.putState(transfer.id, Buffer.from(stringify(sortKeysRecursive(transfer))));
+        return JSON.stringify(transfer);
+    }
+
+    async CreateMedicineReturn(ctx, returnData) {
+        const data = JSON.parse(returnData);
+        const returnMedicine = {
+            id: data.id,
+            requestId: data.requestId,
+            responseId: data.responseId,
+            transferId: data.transferId,
+            returnId: data.returnId,
+            fromHospitalId: data.fromHospitalId,
+            toHospitalId: data.toHospitalId,
+            createdAt: data.createdAt,
+            updatedAt: data.updatedAt,
+            status: data.status,
+            returnMedicine: {
+                name: data.name,
+                manufacturer: data.manufacturer,
+                expiryDate: data.expiryDate,
+                quantity: data.quantity,
+                pricePerUnit: data.pricePerUnit
+            }
+        };
+        await ctx.stub.putState(returnMedicine.id, Buffer.from(stringify(sortKeysRecursive(returnMedicine))));
+        return JSON.stringify(returnMedicine);
+    }
+
+    /*
+    Update resquest status
+    */
+    async UpdateMedicineRequestStatus(ctx, id, status) {
+        const ledgerString = await this.ReadLedger(ctx, id);
+        const ledger = JSON.parse(ledgerString);
+        ledger.status = status;
+        ledger.updatedAt = String(Date.now());
+        await ctx.stub.putState(id, Buffer.from(stringify(sortKeysRecursive(ledger))));
+        return JSON.stringify(ledger);
     }
 
     // CreateAsset issues a new asset to the world state with given details.
