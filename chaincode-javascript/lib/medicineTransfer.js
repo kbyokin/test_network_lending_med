@@ -486,19 +486,75 @@ class MedicineTransfer extends Contract {
     async CreateMedicineResponse(ctx, responseData) {
         const data = JSON.parse(responseData);
         // Check if responseId exists
-        const exists = await this.MedicineExists(ctx, data.responseId);
-        if (!exists) {
+        const responseExists = await this.MedicineExists(ctx, data.responseId);
+        if (!responseExists) {
             throw new Error(`The response ${data.responseId} does not exist`);
         }
-        const assetString = await this.ReadMedicine(ctx, data.responseId);
-        const asset = JSON.parse(assetString);
-        asset.status = responseData.status;
-        asset.updatedAt = data.updatedAt;
-        asset.offeredMedicine = data.offeredMedicine;
-        await ctx.stub.putState(asset.id, Buffer.from(stringify(sortKeysRecursive(asset))));
+        const responseAssetString = await this.ReadMedicine(ctx, data.responseId);
+        const responseAsset = JSON.parse(responseAssetString);
+        const requestExists = await this.MedicineExists(ctx, responseAsset.requestId);
+        if (!requestExists) {
+            throw new Error(`The request ${responseAsset.requestId} does not exist`);
+        }
+        const requestAssetString = await this.ReadMedicine(ctx, responseAsset.requestId);
+        const requestAsset = JSON.parse(requestAssetString);
+        // Update response status
+        responseAsset.status = data.status;
+        responseAsset.updatedAt = data.updatedAt;
+        responseAsset.offeredMedicine = data.offeredMedicine;
+        await ctx.stub.putState(responseAsset.id, Buffer.from(stringify(sortKeysRecursive(responseAsset))));
         return JSON.stringify({
+            requestId: requestAsset.requestId,
             responseId: data.responseId,
             updatedAt: data.updatedAt
+        });
+    }
+
+    async CreateMedicineTransfer(ctx, responseId, updatedAt) {
+        const responseExists = await this.MedicineExists(ctx, responseId);
+        if (!responseExists) {
+            throw new Error(`The asset ${responseId} does not exist`);
+        }
+        const responseAssetString = await this.ReadMedicine(ctx, responseId);
+        const responseAsset = JSON.parse(responseAssetString);
+        const requestExists = await this.MedicineExists(ctx, responseAsset.requestId);
+        if (!requestExists) {
+            throw new Error(`The request ${responseAsset.requestId} does not exist`);
+        }
+        if (responseAsset.status !== 'pending') {
+            throw new Error(`The response ${responseId} is not in pending status`);
+        }
+        responseAsset.status = 'inTransfer';
+        responseAsset.updatedAt = updatedAt;
+        await ctx.stub.putState(responseAsset.id, Buffer.from(stringify(sortKeysRecursive(responseAsset))));
+
+        const requestAssetString = await this.ReadMedicine(ctx, responseAsset.requestId);
+        const requestAsset = JSON.parse(requestAssetString);
+        // Create new transfer record
+        const transferId = `TRANS-${requestAsset.id}-${requestAsset.postingHospitalId}`;
+        const transferAsset = {
+            transferId: transferId,
+            requestId: requestAsset.requestId,
+            responseId: responseAsset.responseId,
+            fromHospitalId: responseAsset.postingHospitalId,
+            fromHospitalNameEN: responseAsset.postingHospitalNameEN,
+            toHospitalId: responseAsset.respondingHospitalId,
+            toHospitalNameEN: responseAsset.respondingHospitalNameEN,
+            ceratedAt: updatedAt,
+            status: 'inTransfer',
+            shipmentDetails: {
+                trackingNumber: null,
+                carrier: null,
+                shippedFrom: null,
+                shippedTo: null,
+                shipmentDate: null
+            }
+        };
+        return JSON.stringify({
+            requestId: requestAsset.requestId,
+            transferId: transferAsset.transferId,
+            updatedAt: updatedAt,
+            status: 'inTransfer',
         });
     }
 
