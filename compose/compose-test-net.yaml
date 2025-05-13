@@ -87,6 +87,10 @@ services:
       - CORE_METRICS_PROVIDER=prometheus
       - CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG={"peername":"peer0hospitala"}
       - CORE_CHAINCODE_EXECUTETIMEOUT=300s
+      - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb-peer0-hospitala:5984
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=admin
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=adminpw
     volumes:
       - ../organizations/peerOrganizations/hospitala.example.com/peers/peer0.hospitala.example.com:/etc/hyperledger/fabric
       - peer0.hospitala.example.com:/var/hyperledger/production
@@ -95,6 +99,19 @@ services:
     ports:
       - 7051:7051
       - 9444:9444
+    networks:
+      - test
+
+  couchsb-peer0-hospitala:
+    container_name: couchdb-peer0-hospitala
+    image: hyperledger/fabric-couchdb:latest
+    labels:
+      service: hyperledger-fabric
+    environment:
+      - COUCHDB_USER=admin
+      - COUCHDB_PASSWORD=adminpw
+    ports:
+      - 5984:5984
     networks:
       - test
 
@@ -127,6 +144,10 @@ services:
       - CORE_METRICS_PROVIDER=prometheus
       - CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG={"peername":"peer0hospitalb"}
       - CORE_CHAINCODE_EXECUTETIMEOUT=300s
+      - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb-peer0-hospitalb:5984
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=admin
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=adminpw
     volumes:
       - ../organizations/peerOrganizations/hospitalb.example.com/peers/peer0.hospitalb.example.com:/etc/hyperledger/fabric
       - peer0.hospitalb.example.com:/var/hyperledger/production
@@ -135,5 +156,18 @@ services:
     ports:
       - 9051:9051
       - 9445:9445
+    networks:
+      - test
+    
+  couchsb-peer0-hospitalb:
+    container_name: couchdb-peer0-hospitalb
+    image: hyperledger/fabric-couchdb:latest
+    labels:
+      service: hyperledger-fabric
+    environment:
+      - COUCHDB_USER=admin
+      - COUCHDB_PASSWORD=adminpw
+    ports:
+      - 5985:5984
     networks:
       - test
