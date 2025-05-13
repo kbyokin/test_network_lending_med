@@ -603,6 +603,78 @@ class MedicineTransfer extends Contract {
         });
     }
 
+    async QueryRequestStatus(ctx, queryHospital) {
+        const requestQuery = {
+            selector: {
+                postingHospitalNameEN: queryHospital
+            }
+        };
+
+        const requestResults = await ctx.stub.getQueryResult(JSON.stringify(requestQuery));
+        const requests = [];
+
+        let reqRes = await requestResults.next();
+        while (!reqRes.done) {
+            const request = JSON.parse(reqRes.value.value.toString('utf8'));
+            requests.push(request);
+            reqRes = await requestResults.next();
+        }
+        await requestResults.close();
+
+        const allResponses = [];
+
+        for (const request of requests) {
+            const responseQuery = {
+                selector: {
+                    requestId: request.id,
+                    status: 'pending'
+                }
+            };
+
+            const responseResults = await ctx.stub.getQueryResult(JSON.stringify(responseQuery));
+
+            let res = await responseResults.next();
+            while (!res.done) {
+                const record = JSON.parse(res.value.value.toString('utf8'));
+                allResponses.push(record);
+                res = await responseResults.next();
+            }
+            await responseResults.close();
+        }
+
+        // Put response data into request data and sort by createdAt
+        for (const request of requests) {
+            const responses = allResponses.filter(response => response.requestId === request.id);
+            request.responses = responses;
+            request.responses.sort((a, b) => a.createdAt - b.createdAt);
+        }
+
+        return requests;
+    }
+
+    async QueryRequestToHospital(ctx, queryHospital, status) {
+        const requestQuery = {
+            selector: {
+                respondingHospitalNameEN: queryHospital,
+                status: status
+            }
+        };
+
+        const requestResults = await ctx.stub.getQueryResult(JSON.stringify(requestQuery));
+        const requests = [];
+
+        let reqRes = await requestResults.next();
+        while (!reqRes.done) {
+            const request = JSON.parse(reqRes.value.value.toString('utf8'));
+            requests.push(request);
+            reqRes = await requestResults.next();
+        }
+        await requestResults.close();
+
+        return requests;
+    }
+
+
     async ReadAssetById(ctx, id) {
         const ledgerJSON = await ctx.stub.getState(id); // get the asset from chaincode state
         if (!ledgerJSON || ledgerJSON.length === 0) {
