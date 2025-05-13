@@ -7,31 +7,32 @@ class RequestFunctions {
     async CreateRequest(ctx, requestData, hospitalList) {
         const data = JSON.parse(requestData);
         const hospitals = JSON.parse(hospitalList);
+        const responseIds = hospitals.map(hospital => `RESP-${data.id}-${hospital.id}`);
         const request = {
             id: data.id,
-            requestId: data.requestId,
+            responseIds: responseIds,
             postingHospitalId: data.postingHospitalId,
-            status: 'available',
+            postingHospitalNameEN: data.postingHospitalNameEN,
+            postingHospitalNameTH: data.postingHospitalNameTH,
+            postingHospitalAddress: data.postingHospitalAddress,
+            status: data.status,
             createdAt: data.createdAt,
             updatedAt: data.updatedAt,
             urgent: data.urgent,
             requestMedicine: {
-                name: data.name,
-                quantity: data.quantity,
-                unit: data.unit,
-                batchNumber: data.batchNumber,
-                manufacturer: data.manufacturer,
-                manufactureDate: data.manufactureDate,
-                expiryDate: data.expiryDate,
-                imageRef: data.imageRef
+                name: data.requestMedicine.name,
+                requestAmount: data.requestMedicine.requestAmount,
+                quantity: data.requestMedicine.quantity,
+                unit: data.requestMedicine.unit,
+                trademark: data.requestMedicine.trademark,
+                manufacturer: data.requestMedicine.manufacturer,
+                pricePerUnit: data.requestMedicine.pricePerUnit,
+                imageRef: data.requestMedicine.imageRef
             },
             requestTerm: {
-                expectedReturnDate: data.expectedReturnDate,
+                expectedReturnDate: data.requestTerm.expectedReturnDate,
                 receiveConditions: {
-                    exactType: data.exactType,
-                    subsidiary: data.subsidiary,
-                    other: data.other,
-                    notes: data.notes
+                    condition: data.requestTerm.receiveConditions.condition
                 }
             }
         };
@@ -42,9 +43,11 @@ class RequestFunctions {
             const responseId = `RESP-${data.id}-${hospital.id}`; // Unique response ID
             const responseRequest = {
                 id: responseId,
-                requestId: data.requestId,
+                requestId: data.id,
                 respondingHospitalId: hospital.id,
-                respondingHospitalName: hospital.name,
+                respondingHospitalNameEN: hospital.nameEN,
+                respondingHospitalNameTH: hospital.nameTH,
+                respondingHospitalAddress: hospital.address,
                 status: 'pending',
                 createdAt: data.createdAt,
                 updatedAt: data.createdAt,
@@ -54,7 +57,7 @@ class RequestFunctions {
             await ctx.stub.putState(responseRequest.id, Buffer.from(stringify(sortKeysRecursive(responseRequest))));
         }
         return JSON.stringify({
-            requestId: data.requestId,
+            requestId: data.id,
             responsesCreated: hospitals.map(h => `RESP-${data.id}-${h.id}`)
         });
     }

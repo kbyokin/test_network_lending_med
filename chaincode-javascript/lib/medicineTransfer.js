@@ -65,7 +65,7 @@ class MedicineTransfer extends Contract {
                     image: 'base64encodedstring'
                 },
                 request: {
-                    expectedReturnDate: '1743572230567', // Unix timestamp
+                    expectedReceiveDate: '1743572230567', // Unix timestamp
                     receiveConditions: {
                         exactType: false,
                         subsidiary: true,
@@ -285,12 +285,13 @@ class MedicineTransfer extends Contract {
         const ledgers = [
             {
                 id: 'medicine1_test',
+                transactionType: 'requestMed',
                 requestId: 'REQ-0001-123',
                 postingHospitalId: hospitalEntities[0].id,
                 postingHospitalNameEN: hospitalEntities[0].nameEN,
                 postingHospitalNameTH: hospitalEntities[0].nameTH,
                 postingHospitalAddress: hospitalEntities[0].address,
-                status: 'Open',
+                status: 'open',
                 createdAt: '1743572230567',
                 updatedAt: '1743572230567',
                 urgent: true,
@@ -307,7 +308,7 @@ class MedicineTransfer extends Contract {
                     imageRef: 'base64encodedstring'
                 },
                 requestTerm: {
-                    expectedReturnDate: '1743572230567',
+                    expectedReceiveDate: '1743572230567',
                     receiveConditions: {
                         exactType: false,
                         subsidiary: true,
@@ -318,12 +319,13 @@ class MedicineTransfer extends Contract {
             },
             {
                 id: 'medicine2_test',
+                transactionType: 'requestMed',
                 requestId: 'REQ-0002-123',
                 postingHospitalId: hospitalEntities[1].id,
                 postingHospitalNameEN: hospitalEntities[1].nameEN,
                 postingHospitalNameTH: hospitalEntities[1].nameTH,
                 postingHospitalAddress: hospitalEntities[1].address,
-                status: 'Open',
+                status: 'open',
                 createdAt: '1743572230567',
                 updatedAt: '1743572230567',
                 urgent: true,
@@ -338,7 +340,7 @@ class MedicineTransfer extends Contract {
                     imageRef: 'base64encodedstring'
                 },
                 requestTerm: {
-                    expectedReturnDate: '1743572230567',
+                    expectedReceiveDate: '1743572230567',
                     receiveConditions: {
                         exactType: false,
                         subsidiary: true,
@@ -349,6 +351,7 @@ class MedicineTransfer extends Contract {
             },
             {
                 id: 'respond-0002_xxxx1',
+                transactionType: 'responseMed',
                 responseId: 'RESP-0002-456',
                 requestId: 'medicine1_test',
                 respondingHospitalId: hospitalEntities[1].id,
@@ -375,6 +378,7 @@ class MedicineTransfer extends Contract {
             },
             {
                 id: 'respond-0003_xxxx1',
+                transactionType: 'responseMed',
                 responseId: 'RESP-0003-789',
                 requestId: 'medicine1_test',
                 respondingHospitalId: hospitalEntities[2].id,
@@ -389,6 +393,7 @@ class MedicineTransfer extends Contract {
             },
             {
                 id: 'respond-0003_xxxx2',
+                transactionType: 'responseMed',
                 responseId: 'RESP-0003-799',
                 requestId: 'medicine2_test',
                 respondingHospitalId: hospitalEntities[2].id,
@@ -403,6 +408,7 @@ class MedicineTransfer extends Contract {
             },
             {
                 id: 'respond-0004_xxxx1',
+                transactionType: 'responseMed',
                 responseId: 'RESP-0004-101112',
                 requestId: 'medicine1_test',
                 respondingHospitalId: hospitalEntities[3].id,
@@ -417,6 +423,7 @@ class MedicineTransfer extends Contract {
             },
             {
                 id: 'transfer-0001-131415',
+                transactionType: 'transferMed',
                 requestId: 'medicine1_test',
                 responseId: 'RESP-0001-456',
                 transferId: 'TRANS-0001-131415',
@@ -440,6 +447,7 @@ class MedicineTransfer extends Contract {
             },
             {
                 id: 'return-0001-161718',
+                transactionType: 'returnMed',
                 requestId: 'medicine1_test',
                 responseId: 'RESP-0002-456',
                 transferId: 'TRANS-0001-131415',
@@ -521,7 +529,7 @@ class MedicineTransfer extends Contract {
         if (!requestExists) {
             throw new Error(`The request ${responseAsset.requestId} does not exist`);
         }
-        if (responseAsset.status !== 'pending') {
+        if (responseAsset.status !== 'accepted') {
             throw new Error(`The response ${responseId} is not in pending status`);
         }
         responseAsset.status = 'inTransfer';
@@ -540,7 +548,7 @@ class MedicineTransfer extends Contract {
             fromHospitalNameEN: responseAsset.postingHospitalNameEN,
             toHospitalId: responseAsset.respondingHospitalId,
             toHospitalNameEN: responseAsset.respondingHospitalNameEN,
-            ceratedAt: updatedAt,
+            createdAt: updatedAt,
             status: 'inTransfer',
             shipmentDetails: {
                 trackingNumber: null,
@@ -550,11 +558,48 @@ class MedicineTransfer extends Contract {
                 shipmentDate: null
             }
         };
+        await ctx.stub.putState(transferAsset.transferId, Buffer.from(stringify(sortKeysRecursive(transferAsset))));
         return JSON.stringify({
             requestId: requestAsset.requestId,
             transferId: transferAsset.transferId,
             updatedAt: updatedAt,
             status: 'inTransfer',
+        });
+    }
+
+    async CreateMedicineReturn(ctx, transferId, returnData) {
+        // fetch transfer transaction
+        const transferExists = await this.MedicineExists(ctx, transferId);
+        if (!transferExists) {
+            throw new Error(`The asset ${transferId} does not exist`);
+        }
+        const transferAssetString = await this.ReadMedicine(ctx, transferId);
+        const transferAsset = JSON.parse(transferAssetString);
+
+        // update transfer status
+        transferAsset.status = 'inReturn';
+        await ctx.stub.putState(transferAsset.id, Buffer.from(stringify(sortKeysRecursive(transferAsset))));
+
+        // automatically create return record and its return medicine based on response transaction
+        // const responseAssetString = await this.ReadMedicine(ctx, transferAsset.resposeId);
+        // const responseAsset = JSON.parse(responseAssetString);
+        const returnId = `RETR-${transferAsset.id}-${transferAsset.fromHospitalId}`;
+        const returnAsset = {
+            returnId: returnId,
+            transferId: transferAsset.transferId,
+            requestId: transferAsset.requestId,
+            responseId: transferAsset.responseId,
+            fromHospitalId: transferAsset.fromHospitalId,
+            toHospitalId: transferAsset.toHospitalId,
+            returnMedicine: returnData
+        };
+
+        await ctx.stub.putState(returnAsset.id, Buffer.from(stringify(sortKeysRecursive(returnAsset))));
+        return JSON.stringify({
+            requestId: transferAsset.requestId,
+            transferId: transferId,
+            returnId: returnId,
+            status: 'inReturn'
         });
     }
 

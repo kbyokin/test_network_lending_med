@@ -68,6 +68,41 @@ const peerHostAlias = envOrDefault('PEER_HOST_ALIAS', 'peer0.hospitala.example.c
 const utf8Decoder = new TextDecoder();
 const assetId = `asset${String(Date.now())}`;
 
+const hospitalEntities = [
+    {
+        nameTH: 'โีรงพยาบาลหาดใหญ่',
+        nameEN: 'Hat Yai Hospital',
+        id: 'hatyaiHospitalMSP',
+        address: '123 Main St, City A',
+    },
+    {
+        nameTH: 'โีรงพยาบาลสงขลา',
+        nameEN: 'Songkhla Hospital',
+        id: 'songkhlaHospitalMSP',
+        address: '123 Main St, City A',
+    },
+    {
+        nameTH: 'โีรงพยาบาลนาหม่อม',
+        nameEN: 'Na Mom Hospital',
+        id: 'namomHospitalMSP',
+        address: '456 Elm St, City B',
+    },
+    {
+        nameTH: 'โีรงพยาบาลสิงหนคร',
+        nameEN: 'Singha Nakhon Hospital',
+        id: 'singhanakohnHospitalMSP',
+        address: '789 Oak St, City C',
+    },
+];
+
+const now = Date.now()
+const daysFromNow = (days) => {
+    const now = Date.now();
+    const futureTimeStamp = now + days * 24 * 60 * 60 * 1000;
+    // return new Date(addDays).toString();
+    return futureTimeStamp.toString();
+}
+
 async function main() {
     displayInputParameters();
 
@@ -101,23 +136,24 @@ async function main() {
         // Get the smart contract from the network.
         const contract = network.getContract(chaincodeName);
 
-        // // Initialize a set of asset data on the ledger using the chaincode 'InitLedger' function.
-        // await initLedger(contract);
-
-        // // Return all the current assets on the ledger.
-        // await getAllAssets(contract);
-
-        // // Create a new asset on the ledger.
-        await createAsset(contract);
-
-        // // Update an existing asset asynchronously.
-        // await transferAssetAsync(contract);
-
-        // // Get the asset details by assetID.
-        // await readAssetByID(contract);
-
-        // Update an asset which does not exist.
-        // await updateNonExistentAsset(contract);
+        // Test request flow
+        // 1: Create hospitalA request medicine to desired hospitals
+        const createReqResult = await createRequestAsset(contract);
+        console.log('*** createReqResult Result:', createReqResult);
+        await readAssetByID(contract, createReqResult.requestId);
+        // // 2: hospitalB responds to hospitalA's request
+        // console.log("---> Before: hospitalB's response");
+        // const assetId = createReqResult.responsesCreated[0];
+        // await readAssetByID(contract, assetId);
+        // await updateResponseAsset(contract, assetId);
+        // console.log("---> After: hospitalB's response");
+        // await readAssetByID(contract, assetId);
+        // // 3: hospitalA approved hospitalB's response and therefore transferTransaction got created
+        // const result = await createTransferAsset(contract, assetId);
+        // console.log('*** Result:', result.transferId);
+        // 4: hospitalB updates shipment details in transferTransaction
+        // 5: hospitalA confirm delivery and therefore create returnTransaction
+        // 6: hospitalB confirm delivery and therefore update this returnTransaction
     } finally {
         gateway.close();
         client.close();
@@ -191,68 +227,131 @@ async function getAllAssets(contract) {
 /**
  * Submit a transaction synchronously, blocking until it has been committed to the ledger.
  */
-async function createAsset(contract) {
+async function createRequestAsset(contract) {
     console.log(
-        '\n--> Submit Transaction: CreateAsset, creates new asset with ID, Color, Size, Owner and AppraisedValue arguments'
+        '\n--> Submit Transaction: CreateAsset'
     );
+    const assetId = `REQ-${now.toString()}`;
 
-    await contract.submitTransaction(
-        'CreateMedicine',
-        assetId,
-        String(Date.now()),
-        'Rama9 Hospital',
-        'Mefenamic Acid',
-        '50',
-        'pill',
-        'AC334',
-        'Pfizer',
-        String(Date.now()),
-        String(Date.now() + 365),
-        'Bangkok',
-        'Available'
-    );
-
-    console.log('*** Transaction committed successfully');
-}
-
-/**
- * Submit transaction asynchronously, allowing the application to process the smart contract response (e.g. update a UI)
- * while waiting for the commit notification.
- */
-async function transferAssetAsync(contract) {
-    console.log(
-        '\n--> Async Submit Transaction: TransferAsset, updates existing asset owner'
-    );
-
-    const commit = await contract.submitAsync('TransferMedicine', {
-        arguments: [assetId, 'Saptha'],
-    });
-    const oldOwner = utf8Decoder.decode(commit.getResult());
-
-    console.log(
-        `*** Successfully submitted transaction to transfer ownership from ${oldOwner} to Saptha`
-    );
-    console.log('*** Waiting for transaction commit');
-
-    const status = await commit.getStatus();
-    if (!status.successful) {
-        throw new Error(
-            `Transaction ${
-                status.transactionId
-            } failed to commit with status code ${String(status.code)}`
-        );
+    const asset = {
+        id: assetId,
+        postingHospitalId: hospitalEntities[0].id,
+        postingHospitalNameEN: hospitalEntities[0].nameEN,
+        postingHospitalNameTH: hospitalEntities[0].nameTH,
+        postingHospitalAddress: hospitalEntities[0].address,
+        status: 'in-progress',
+        createdAt: now.toString(),
+        updatedAt: now.toString(),
+        urgent: true,
+        requestMedicine: {
+            name: 'Paracetamol',
+            trademark: 'Adrenaline Injection',
+            quantity: 100,
+            pricePerUnit: 150,
+            unit: '1mg/1ml',
+            batchNumber: 'B12345',
+            manufacturer: 'Pharma Inc.',
+            manufactureDate: '1743572230567',
+            imageRef: 'base64encodedstring'
+        },
+        requestTerm: {
+            expectedReturnDate: daysFromNow(10),
+            receiveConditions: {
+                exactType: false,
+                subsidiary: true,
+                other: true,
+                notes: 'Equivalent brands also acceptable'
+            }
+        }
     }
 
-    console.log('*** Transaction committed successfully');
+    const hospitalList = [
+        {
+            nameTH: 'โีรงพยาบาลนาหม่อม',
+            nameEN: 'Na Mom Hospital',
+            id: 'namomHospitalMSP',
+            address: '456 Elm St, City B',
+        },
+        {
+            nameTH: 'โีรงพยาบาลสงขลา',
+            nameEN: 'Songkhla Hospital',
+            id: 'songkhlaHospitalMSP',
+            address: '123 Main St, City A',
+        },
+        {
+            nameTH: 'โีรงพยาบาลสิงหนคร',
+            nameEN: 'Singha Nakhon Hospital',
+            id: 'singhanakohnHospitalMSP',
+            address: '789 Oak St, City C',
+        },
+    ]
+
+    const resultBytes = await contract.submitTransaction(
+        'CreateMedicineRequest',
+        JSON.stringify(asset),
+        JSON.stringify(hospitalList)
+    );
+
+    const resultJson = utf8Decoder.decode(resultBytes);
+    const result = JSON.parse(resultJson);
+    return result;
 }
 
-async function readAssetByID(contract) {
+async function updateResponseAsset(contract, assetId) {
+    console.log(
+        '\n--> Submit Transaction: UpdateResponseAsset, updates existing asset owner'
+    );
+    const responseAsset = {
+        responseId: assetId,
+        updatedAt: now.toString(),
+        status: 'in-transfer', // Next is to transfer
+        offeredMedicine: {
+            name: 'Paracetamol',
+            trademark: 'Adrenaline Injection',
+            quantity: 100,
+            pricePerUnit: 150,
+            unit: '1mg/1ml',
+            batchNumber: 'B12345',
+            manufacturer: 'Pharma Inc.',
+            manufactureDate: now.toString(),
+            expiryDate: now.toString(),
+            imageRef: 'base64encodedstring',
+            returnTerm: {
+                sameUnit: true,
+                subsidiary: false,
+                sameValue: false,
+                other: false,
+                notes: "please return the same unit"
+            }
+        },
+    }
+    const resultBytes = await contract.submitTransaction('CreateMedicineResponse', JSON.stringify(responseAsset));
+    const resultJson = utf8Decoder.decode(resultBytes);
+    const result = JSON.parse(resultJson);
+    console.log('*** Transaction committed successfully');
+    console.log('*** Result:', result); 
+    return result;
+}
+
+async function createTransferAsset(contract, assetId) {
+    console.log(`\n--> Submit Transaction: TransferAsset`);
+    const updatedAt = now.toString();
+    const responseId = assetId;
+    const resultBytes = await contract.submitTransaction('CreateMedicineTransfer', responseId, updatedAt);
+    const resultJson = utf8Decoder.decode(resultBytes);
+    const result = JSON.parse(resultJson);
+    console.log('*** Transaction committed successfully');
+    console.log('*** Result:', result);
+    return result;
+}
+
+async function readAssetByID(contract, assetId) {
     console.log(
         '\n--> Evaluate Transaction: ReadAsset, function returns asset attributes'
     );
 
     const resultBytes = await contract.evaluateTransaction(
-        'ReadMedicine',
+        'ReadAssetById',
         assetId
     );
 
