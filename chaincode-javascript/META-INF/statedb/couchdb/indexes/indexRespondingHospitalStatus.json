@@ -1,0 +1,7 @@
+{
+  "index": {
+    "fields": ["respondingHospitalNameEN", "status"]
+  },
+  "name": "indexRespondingHospitalStatus",
+  "type": "json"
+}

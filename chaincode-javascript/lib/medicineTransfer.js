@@ -627,7 +627,6 @@ class MedicineTransfer extends Contract {
             const responseQuery = {
                 selector: {
                     requestId: request.id,
-                    status: 'pending'
                 }
             };
 
@@ -645,33 +644,53 @@ class MedicineTransfer extends Contract {
         // Put response data into request data and sort by createdAt
         for (const request of requests) {
             const responses = allResponses.filter(response => response.requestId === request.id);
-            request.responses = responses;
-            request.responses.sort((a, b) => a.createdAt - b.createdAt);
+            request.responseDetails = responses;
+            request.responseDetails.sort((a, b) => a.createdAt - b.createdAt);
         }
 
         return requests;
     }
 
     async QueryRequestToHospital(ctx, queryHospital, status) {
-        const requestQuery = {
+        const responseQuery = {
             selector: {
                 respondingHospitalNameEN: queryHospital,
                 status: status
             }
         };
 
-        const requestResults = await ctx.stub.getQueryResult(JSON.stringify(requestQuery));
-        const requests = [];
+        const responseResults = await ctx.stub.getQueryResult(JSON.stringify(responseQuery));
+        const enrichedResponses = [];
 
-        let reqRes = await requestResults.next();
-        while (!reqRes.done) {
-            const request = JSON.parse(reqRes.value.value.toString('utf8'));
-            requests.push(request);
-            reqRes = await requestResults.next();
+        // ✅ Create in-memory cache for requestId → requestDetails
+        const requestCache = {};
+
+        let res = await responseResults.next();
+        while (!res.done) {
+            const response = JSON.parse(res.value.value.toString('utf8'));
+            const requestId = response.requestId;
+
+            // 🔄 Use cache or fetch from ledger
+            if (!requestCache[requestId]) {
+                console.log('Fetching request from ledger:', requestId);
+                const requestBytes = await ctx.stub.getState(requestId);
+                if (requestBytes && requestBytes.length > 0) {
+                    const request = JSON.parse(requestBytes.toString('utf8'));
+                    requestCache[requestId] = request;
+                } else {
+                    requestCache[requestId] = null;
+                }
+            } else {
+                console.log('Using cached request:', requestId);
+            }
+
+            response.requestDetails = requestCache[requestId];
+            enrichedResponses.push(response);
+            res = await responseResults.next();
         }
-        await requestResults.close();
 
-        return requests;
+        await responseResults.close();
+        return enrichedResponses;
     }
 
 
