@@ -22,7 +22,7 @@ chmod -R u+rwX channel-artifacts
 cryptogen generate --config=./config/crypto-config.yaml --output="organizations"
 
 # Bring up network
-docker compose -f compose/compose-test-net.yaml -f compose/docker/docker-compose-test-net.yaml up -d
+docker-compose -f compose/compose-test-net.yaml -f compose/docker/docker-compose-test-net.yaml up -d
 docker ps -a
 
 export FABRIC_CFG_PATH=${PWD}/configtx
