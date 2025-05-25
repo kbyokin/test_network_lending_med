@@ -567,40 +567,51 @@ class MedicineTransfer extends Contract {
         });
     }
 
-    async CreateMedicineReturn(ctx, transferId, returnData) {
-        // fetch transfer transaction
-        const transferExists = await this.MedicineExists(ctx, transferId);
-        if (!transferExists) {
-            throw new Error(`The asset ${transferId} does not exist`);
+    async CreateMedicineReturn(ctx, responseId, returnData) {
+        // fetch response transaction
+        const responseExists = await this.MedicineExists(ctx, responseId);
+        if (!responseExists) {
+            throw new Error(`The asset ${responseId} does not exist`);
         }
-        const transferAssetString = await this.ReadMedicine(ctx, transferId);
-        const transferAsset = JSON.parse(transferAssetString);
-
-        // update transfer status
-        transferAsset.status = 'inReturn';
-        await ctx.stub.putState(transferAsset.id, Buffer.from(stringify(sortKeysRecursive(transferAsset))));
-
-        // automatically create return record and its return medicine based on response transaction
-        // const responseAssetString = await this.ReadMedicine(ctx, transferAsset.resposeId);
-        // const responseAsset = JSON.parse(responseAssetString);
-        const returnId = `RETR-${transferAsset.id}-${transferAsset.fromHospitalId}`;
-        const returnAsset = {
-            returnId: returnId,
-            transferId: transferAsset.transferId,
-            requestId: transferAsset.requestId,
-            responseId: transferAsset.responseId,
-            fromHospitalId: transferAsset.fromHospitalId,
-            toHospitalId: transferAsset.toHospitalId,
-            returnMedicine: returnData
-        };
-
-        await ctx.stub.putState(returnAsset.id, Buffer.from(stringify(sortKeysRecursive(returnAsset))));
+        const responseAssetString = await this.ReadMedicine(ctx, responseId);
+        const responseAsset = JSON.parse(responseAssetString);
+        const returnAsset = JSON.parse(returnData);
+        responseAsset.status = 'confirm-return';
+        responseAsset.returnMedicine = returnAsset;
+        responseAsset.updatedAt = returnAsset.updatedAt;
+        await ctx.stub.putState(responseAsset.id, Buffer.from(stringify(sortKeysRecursive(responseAsset))));
         return JSON.stringify({
-            requestId: transferAsset.requestId,
-            transferId: transferId,
-            returnId: returnId,
-            status: 'inReturn'
+            requestId: responseAsset.requestId,
+            responseId: responseId,
+            status: 'confirm-return'
         });
+
+        // // update response status
+        // responseAsset.status = 'inReturn';
+        // await ctx.stub.putState(responseAsset.id, Buffer.from(stringify(sortKeysRecursive(responseAsset))));
+
+        // // automatically create return record and its return medicine based on response transaction
+        // // const responseAssetString = await this.ReadMedicine(ctx, responseAsset.resposeId);
+        // // const responseAsset = JSON.parse(responseAssetString);
+        // const returnId = `RETR-${responseAsset.id}-${responseAsset.fromHospitalId}`;
+        // const returnAsset = {
+        //     returnId: returnId,
+        //     // responseId: responseAsset.responseId,
+        //     requestId: responseAsset.requestId,
+        //     responseId: responseAsset.responseId,
+        //     fromHospitalId: responseAsset.fromHospitalId,
+        //     toHospitalId: responseAsset.toHospitalId,
+        //     returnMedicine: returnData,
+        //     createdAt: responseAsset.createdAt,
+        // };
+
+        // await ctx.stub.putState(returnAsset.id, Buffer.from(stringify(sortKeysRecursive(returnAsset))));
+        // return JSON.stringify({
+        //     requestId: responseAsset.requestId,
+        //     responseId: responseId,
+        //     returnId: returnId,
+        //     status: 'inReturn'
+        // });
     }
 
     async QueryRequestStatus(ctx, queryHospital) {
