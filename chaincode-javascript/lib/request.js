@@ -34,7 +34,8 @@ class RequestFunctions {
                 receiveConditions: {
                     condition: data.requestTerm.receiveConditions.condition
                 }
-            }
+            },
+            ticketType: 'request'
         };
 
         await ctx.stub.putState(request.id, Buffer.from(stringify(sortKeysRecursive(request))));
@@ -52,7 +53,8 @@ class RequestFunctions {
                 createdAt: data.createdAt,
                 updatedAt: data.createdAt,
                 offeredMedicine: null,
-                returnMedicine: null
+                returnMedicine: null,
+                ticketType: 'request'
             };
             await ctx.stub.putState(responseRequest.id, Buffer.from(stringify(sortKeysRecursive(responseRequest))));
         }

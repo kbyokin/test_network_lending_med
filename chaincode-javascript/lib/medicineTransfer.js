@@ -11,6 +11,7 @@ const stringify = require('json-stringify-deterministic');
 const sortKeysRecursive = require('sort-keys-recursive');
 const { Contract } = require('fabric-contract-api');
 const RequestFunctions = require('./request');
+const SharingFunctions = require('./sharing');
 
 const hospitalEntities = [
     {
@@ -44,6 +45,7 @@ class MedicineTransfer extends Contract {
     constructor() {
         super();
         this.request = new RequestFunctions();
+        this.sharing = new SharingFunctions();
     }
 
     async InitMedicines(ctx) {
@@ -491,6 +493,10 @@ class MedicineTransfer extends Contract {
         return this.request.CreateRequest(ctx, requestData, hospitalList);
     }
 
+    async CreateMedicineSharing(ctx, sharingData, hospitalList) {
+        return this.sharing.CreateSharing(ctx, sharingData, hospitalList);
+    }
+
     async CreateMedicineResponse(ctx, responseData) {
         const data = JSON.parse(responseData);
         // Check if responseId exists
@@ -585,33 +591,25 @@ class MedicineTransfer extends Contract {
             responseId: responseId,
             status: 'confirm-return'
         });
+    }
 
-        // // update response status
-        // responseAsset.status = 'inReturn';
-        // await ctx.stub.putState(responseAsset.id, Buffer.from(stringify(sortKeysRecursive(responseAsset))));
+    async AcceptSharing(ctx, sharingId, accepetOffer, updatedAt) {
+        const sharingResponseExists = await this.MedicineExists(ctx, sharingId);
+        if (!sharingResponseExists) {
+            throw new Error(`The asset ${sharingId} does not exist`);
+        }
+        const sharingResponseAssetString = await this.ReadMedicine(ctx, sharingId);
+        const sharingResponseAsset = JSON.parse(sharingResponseAssetString);
+        const offer = JSON.parse(accepetOffer);
+        sharingResponseAsset.status = 'accepted';
+        sharingResponseAsset.acceptedOffer = offer.acceptOffer;
+        sharingResponseAsset.returnTerm = offer.returnTerm;
 
-        // // automatically create return record and its return medicine based on response transaction
-        // // const responseAssetString = await this.ReadMedicine(ctx, responseAsset.resposeId);
-        // // const responseAsset = JSON.parse(responseAssetString);
-        // const returnId = `RETR-${responseAsset.id}-${responseAsset.fromHospitalId}`;
-        // const returnAsset = {
-        //     returnId: returnId,
-        //     // responseId: responseAsset.responseId,
-        //     requestId: responseAsset.requestId,
-        //     responseId: responseAsset.responseId,
-        //     fromHospitalId: responseAsset.fromHospitalId,
-        //     toHospitalId: responseAsset.toHospitalId,
-        //     returnMedicine: returnData,
-        //     createdAt: responseAsset.createdAt,
-        // };
-
-        // await ctx.stub.putState(returnAsset.id, Buffer.from(stringify(sortKeysRecursive(returnAsset))));
-        // return JSON.stringify({
-        //     requestId: responseAsset.requestId,
-        //     responseId: responseId,
-        //     returnId: returnId,
-        //     status: 'inReturn'
-        // });
+        await ctx.stub.putState(sharingResponseAsset.id, Buffer.from(stringify(sortKeysRecursive(sharingResponseAsset))));
+        return JSON.stringify({
+            sharingId: sharingId,
+            status: 'accepted'
+        });
     }
 
     async QueryRequestStatus(ctx, queryHospital) {
@@ -638,6 +636,7 @@ class MedicineTransfer extends Contract {
             const responseQuery = {
                 selector: {
                     requestId: request.id,
+                    ticketType: 'request'
                 }
             };
 
@@ -660,6 +659,40 @@ class MedicineTransfer extends Contract {
         }
 
         return requests;
+    }
+
+    async QuerySharingStatusToHospital(ctx, queryHospital) {
+        const responseQuery = {
+            selector: {
+                respondingHospitalNameEN: queryHospital,
+                status: 'pending',
+                ticketType: 'sharing'
+            }
+        };
+        const responseResults = await ctx.stub.getQueryResult(JSON.stringify(responseQuery));
+        const enrichedResponses = [];
+        const requestCache = {};
+        let res = await responseResults.next();
+        while (!res.done) {
+            const response = JSON.parse(res.value.value.toString('utf8'));
+            const sharingId = response.sharingId;
+            if (!requestCache[sharingId]) {
+                const sharingBytes = await ctx.stub.getState(sharingId);
+                if (sharingBytes && sharingBytes.length > 0) {
+                    const sharing = JSON.parse(sharingBytes.toString('utf8'));
+                    requestCache[sharingId] = sharing;
+                } else {
+                    requestCache[sharingId] = null;
+                }
+            } else {
+                console.log('Using cached sharing:', sharingId);
+            }
+            response.sharingDetails = requestCache[sharingId];
+            enrichedResponses.push(response);
+            res = await responseResults.next();
+        }
+        await responseResults.close();
+        return enrichedResponses;
     }
 
     async QueryRequestToHospital(ctx, queryHospital, status) {
