@@ -136,11 +136,19 @@ async function main() {
         // Get the smart contract from the network.
         const contract = network.getContract(chaincodeName);
 
+        // create sharing asset
+        await createSharingAsset(contract);
+        // await querySharingStatusToHospital(contract);
+
+        // Query all medicines: RichQuery
+        // console.log('*** Query all medicines:');
+        // await getAllAssets(contract);
+
         // Test request flow
         // 1: Create hospitalA request medicine to desired hospitals
-        const createReqResult = await createRequestAsset(contract);
-        console.log('*** createReqResult Result:', createReqResult);
-        await readAssetByID(contract, createReqResult.requestId);
+        // const createReqResult = await createRequestAsset(contract);
+        // console.log('*** createReqResult Result:', createReqResult);
+        // await readAssetByID(contract, createReqResult.requestId);
         // // 2: hospitalB responds to hospitalA's request
         // console.log("---> Before: hospitalB's response");
         // const assetId = createReqResult.responsesCreated[0];
@@ -153,6 +161,7 @@ async function main() {
         // console.log('*** Result:', result.transferId);
         // 4: hospitalB updates shipment details in transferTransaction
         // 5: hospitalA confirm delivery and therefore create returnTransaction
+        // await createReturnAsset(contract, "RESP-REQ-1748145276880-2");
         // 6: hospitalB confirm delivery and therefore update this returnTransaction
     } finally {
         gateway.close();
@@ -217,8 +226,20 @@ async function getAllAssets(contract) {
         '\n--> Evaluate Transaction: GetAllAssets, function returns all the current assets on the ledger'
     );
 
-    const resultBytes = await contract.evaluateTransaction('GetAllMedicines');
+    // const resultBytes = await contract.evaluateTransaction('QueryRequestStatus');
+    const resultBytes = await contract.submitTransaction('QueryRequestToHospital', 'Na Mom Hospital', 'to-transfer');
 
+    const resultJson = utf8Decoder.decode(resultBytes);
+    const result = JSON.parse(resultJson);
+    console.log(result[0].responses);
+    console.log('*** Result:', result);
+}
+
+async function querySharingStatusToHospital(contract) {
+    console.log(
+        '\n--> Evaluate Transaction: QuerySharingStatusToHospital'
+    );
+    const resultBytes = await contract.submitTransaction('QuerySharingStatusToHospital', 'Na Mom Hospital');
     const resultJson = utf8Decoder.decode(resultBytes);
     const result = JSON.parse(resultJson);
     console.log('*** Result:', result);
@@ -297,6 +318,75 @@ async function createRequestAsset(contract) {
     return result;
 }
 
+async function createSharingAsset(contract) {
+    console.log(
+        '\n--> Submit Transaction: CreateSharingAsset'
+    );
+    const sharingId = `SHAR-${now.toString()}`;
+    const asset = {
+        id: sharingId,
+        postingHospitalId: hospitalEntities[0].id,
+        postingHospitalNameEN: hospitalEntities[0].nameEN,
+        postingHospitalNameTH: hospitalEntities[0].nameTH,
+        postingHospitalAddress: hospitalEntities[0].address,
+        status: 'in-progress',
+        createdAt: now.toString(),
+        updatedAt: now.toString(),
+        sharingMedicine: {
+            name: 'Paracetamol',
+            trademark: 'Adrenaline Injection',
+            quantity: 100,
+            pricePerUnit: 150,
+            unit: '1mg/1ml',
+            batchNumber: 'B12345',
+            manufacturer: 'Pharma Inc.',
+            manufactureDate: '1743572230567',
+            expiryDate: '1743572230567',
+            imageRef: 'base64encodedstring'
+        },
+        sharingReturnTerm: {
+            expectedReturnDate: daysFromNow(10),
+            receiveConditions: {
+                exactType: false,
+                subType: true,
+                otherType: true,
+                supportType: true,
+                noReturn: true,
+            }
+        }
+    }
+    const hospitalList = [
+        {
+            nameTH: 'โีรงพยาบาลนาหม่อม',
+            nameEN: 'Na Mom Hospital',
+            id: 'namomHospitalMSP',
+            address: '456 Elm St, City B',
+        },
+        {
+            nameTH: 'โีรงพยาบาลสงขลา',
+            nameEN: 'Songkhla Hospital',
+            id: 'songkhlaHospitalMSP',
+            address: '123 Main St, City A',
+        },
+        {
+            nameTH: 'โีรงพยาบาลสิงหนคร',
+            nameEN: 'Singha Nakhon Hospital',
+            id: 'singhanakohnHospitalMSP',
+            address: '789 Oak St, City C',
+        },
+    ]
+    const resultBytes = await contract.submitTransaction(
+        'CreateMedicineSharing',
+        JSON.stringify(asset),
+        JSON.stringify(hospitalList)
+    );
+    const resultJson = utf8Decoder.decode(resultBytes);
+    const result = JSON.parse(resultJson);
+    console.log('*** Transaction committed successfully');
+    console.log('*** Result:', result);
+    return result;
+}
+
 async function updateResponseAsset(contract, assetId) {
     console.log(
         '\n--> Submit Transaction: UpdateResponseAsset, updates existing asset owner'
@@ -338,6 +428,25 @@ async function createTransferAsset(contract, assetId) {
     const updatedAt = now.toString();
     const responseId = assetId;
     const resultBytes = await contract.submitTransaction('CreateMedicineTransfer', responseId, updatedAt);
+    const resultJson = utf8Decoder.decode(resultBytes);
+    const result = JSON.parse(resultJson);
+    console.log('*** Transaction committed successfully');
+    console.log('*** Result:', result);
+    return result;
+}
+
+async function createReturnAsset(contract, assetId) {
+    const returnData = {
+        id: `RETR-${assetId}-${hospitalEntities[0].id}`,
+        requestId: assetId,
+        responseId: assetId,
+        fromHospitalId: hospitalEntities[0].id,
+        toHospitalId: hospitalEntities[1].id,
+        returnMedicine: {
+            name: 'test'
+        }
+    }
+    const resultBytes = await contract.submitTransaction('CreateMedicineReturn', assetId, JSON.stringify(returnData));
     const resultJson = utf8Decoder.decode(resultBytes);
     const result = JSON.parse(resultJson);
     console.log('*** Transaction committed successfully');
