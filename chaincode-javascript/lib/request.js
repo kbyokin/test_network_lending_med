@@ -32,7 +32,8 @@ class RequestFunctions {
             requestTerm: {
                 expectedReturnDate: data.requestTerm.expectedReturnDate,
                 receiveConditions: {
-                    condition: data.requestTerm.receiveConditions.condition
+                    condition: data.requestTerm.receiveConditions.condition,
+                    supportType: data.requestTerm.receiveConditions.supportType
                 }
             },
             ticketType: 'request'
