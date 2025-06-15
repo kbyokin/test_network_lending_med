@@ -39,20 +39,6 @@ const hospitalEntities = [
     },
 ];
 
-const acceptSharingData = {
-    sharingId: 'sharing1_test',
-    returnTerm: {
-        returnDate: '1743572230567',
-        returnConditions: 'Equivalent brands also acceptable'
-    },
-    acceptOffer: {
-        offerId: 'offer1_test',
-        offerDate: '1743572230567',
-        offerConditions: 'Equivalent brands also acceptable'
-    },
-    updatedAt: '1743572230567'
-};
-
 class MedicineTransfer extends Contract {
     constructor() {
         super();
@@ -174,9 +160,7 @@ class MedicineTransfer extends Contract {
         for (const request of requests) {
             const responseQuery = {
                 selector: {
-                    requestId: request.id,
-                    status: status,
-                    ticketType: 'request'
+                    requestId: request.id
                 }
             };
 
