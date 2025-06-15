@@ -48,10 +48,19 @@ class SharingFunctions {
         });
     }
 
-    async AcceptSharing(ctx, sharingId, accepetOffer) {
+    async AcceptSharing(ctx, acceptSharingData) {
+        const data = JSON.parse(acceptSharingData);
+        const sharingId = data.sharingId;
+        const returnTerm = data.returnTerm;
+        const acceptOffer = data.acceptOffer;
+        const updatedAt = data.updatedAt;
+
         const sharing = await ctx.stub.getState(sharingId);
         const sharingData = JSON.parse(sharing);
         sharingData.status = 'accepted';
+        sharingData.returnTerm = returnTerm;
+        sharingData.acceptedOffer = acceptOffer;
+        sharingData.updatedAt = updatedAt;
         await ctx.stub.putState(sharingId, Buffer.from(stringify(sortKeysRecursive(sharingData))));
     }
 }

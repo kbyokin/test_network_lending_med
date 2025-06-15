@@ -39,6 +39,20 @@ const hospitalEntities = [
     },
 ];
 
+const acceptSharingData = {
+    sharingId: 'sharing1_test',
+    returnTerm: {
+        returnDate: '1743572230567',
+        returnConditions: 'Equivalent brands also acceptable'
+    },
+    acceptOffer: {
+        offerId: 'offer1_test',
+        offerDate: '1743572230567',
+        offerConditions: 'Equivalent brands also acceptable'
+    },
+    updatedAt: '1743572230567'
+};
+
 class MedicineTransfer extends Contract {
     constructor() {
         super();
@@ -135,10 +149,12 @@ class MedicineTransfer extends Contract {
     }
 
     // Query Functions
-    async QueryRequestStatus(ctx, queryHospital) {
+    async QueryRequestStatus(ctx, queryHospital, status) {
         const requestQuery = {
             selector: {
-                postingHospitalNameEN: queryHospital
+                postingHospitalNameEN: queryHospital,
+                status: status,
+                ticketType: 'request'
             }
         };
 
@@ -159,6 +175,7 @@ class MedicineTransfer extends Contract {
             const responseQuery = {
                 selector: {
                     requestId: request.id,
+                    status: status,
                     ticketType: 'request'
                 }
             };
@@ -183,43 +200,12 @@ class MedicineTransfer extends Contract {
         return requests;
     }
 
-    async QuerySharingStatusToHospital(ctx, queryHospital) {
-        const responseQuery = {
-            selector: {
-                respondingHospitalNameEN: queryHospital,
-                status: 'pending',
-                ticketType: 'sharing'
-            }
-        };
-        const responseResults = await ctx.stub.getQueryResult(JSON.stringify(responseQuery));
-        const enrichedResponses = [];
-        const requestCache = {};
-        let res = await responseResults.next();
-        while (!res.done) {
-            const response = JSON.parse(res.value.value.toString('utf8'));
-            const sharingId = response.sharingId;
-            if (!requestCache[sharingId]) {
-                const sharingBytes = await ctx.stub.getState(sharingId);
-                if (sharingBytes && sharingBytes.length > 0) {
-                    const sharing = JSON.parse(sharingBytes.toString('utf8'));
-                    requestCache[sharingId] = sharing;
-                } else {
-                    requestCache[sharingId] = null;
-                }
-            }
-            response.sharingDetails = requestCache[sharingId];
-            enrichedResponses.push(response);
-            res = await responseResults.next();
-        }
-        await responseResults.close();
-        return enrichedResponses;
-    }
-
     async QueryRequestToHospital(ctx, queryHospital, status) {
         const responseQuery = {
             selector: {
                 respondingHospitalNameEN: queryHospital,
-                status: status
+                status: status,
+                ticketType: 'request'
             }
         };
 
@@ -249,6 +235,43 @@ class MedicineTransfer extends Contract {
 
         await responseResults.close();
         return enrichedResponses;
+    }
+
+    // Sharing Functions
+    async QuerySharingStatusToHospital(ctx, queryHospital, status) {
+        const responseQuery = {
+            selector: {
+                respondingHospitalNameEN: queryHospital,
+                status: status,
+                ticketType: 'sharing'
+            }
+        };
+        const responseResults = await ctx.stub.getQueryResult(JSON.stringify(responseQuery));
+        const enrichedResponses = [];
+        const requestCache = {};
+        let res = await responseResults.next();
+        while (!res.done) {
+            const response = JSON.parse(res.value.value.toString('utf8'));
+            const sharingId = response.sharingId;
+            if (!requestCache[sharingId]) {
+                const sharingBytes = await ctx.stub.getState(sharingId);
+                if (sharingBytes && sharingBytes.length > 0) {
+                    const sharing = JSON.parse(sharingBytes.toString('utf8'));
+                    requestCache[sharingId] = sharing;
+                } else {
+                    requestCache[sharingId] = null;
+                }
+            }
+            response.sharingDetails = requestCache[sharingId];
+            enrichedResponses.push(response);
+            res = await responseResults.next();
+        }
+        await responseResults.close();
+        return enrichedResponses;
+    }
+
+    async AcceptSharing(ctx, acceptSharingData) {
+        return this.sharing.AcceptSharing(ctx, acceptSharingData);
     }
 
     // Medicine Functions
