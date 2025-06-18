@@ -184,6 +184,47 @@ class MedicineTransfer extends Contract {
         return requests;
     }
 
+    async QuerySharingStatus(ctx, queryHospital, status) {
+        const sharingQuery = {
+            selector: {
+                postingHospitalNameEN: queryHospital,
+                status: status,
+                ticketType: 'sharing'
+            }
+        };
+        const sharingResults = await ctx.stub.getQueryResult(JSON.stringify(sharingQuery));
+        const sharings = [];
+        let sharingRes = await sharingResults.next();
+        while (!sharingRes.done) {
+            const sharing = JSON.parse(sharingRes.value.value.toString('utf8'));
+            sharings.push(sharing);
+            sharingRes = await sharingResults.next();
+        }
+        await sharingResults.close();
+        const allResponses = [];
+        for (const sharing of sharings) {
+            const responseQuery = {
+                selector: {
+                    sharingId: sharing.id
+                }
+            };
+            const responseResults = await ctx.stub.getQueryResult(JSON.stringify(responseQuery));
+            let res = await responseResults.next();
+            while (!res.done) {
+                const record = JSON.parse(res.value.value.toString('utf8'));
+                allResponses.push(record);
+                res = await responseResults.next();
+            }
+            await responseResults.close();
+        }
+        for (const sharing of sharings) {
+            const responses = allResponses.filter(response => response.sharingId === sharing.id);
+            sharing.responseDetails = responses;
+            sharing.responseDetails.sort((a, b) => a.createdAt - b.createdAt);
+        }
+        return sharings;
+    }
+
     async QueryRequestToHospital(ctx, queryHospital, status) {
         const responseQuery = {
             selector: {
