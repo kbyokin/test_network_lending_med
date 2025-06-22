@@ -11,6 +11,7 @@ const RequestFunctions = require('./request');
 const SharingFunctions = require('./sharing');
 const MedicineFunctions = require('./medicine');
 const TransferFunctions = require('./transfer');
+const ResponseFunctions = require('./response');
 
 const hospitalEntities = [
     {
@@ -46,6 +47,7 @@ class MedicineTransfer extends Contract {
         this.sharing = new SharingFunctions();
         this.medicine = new MedicineFunctions();
         this.transfer = new TransferFunctions();
+        this.response = new ResponseFunctions();
     }
 
     async InitMedicines(ctx) {
@@ -293,6 +295,10 @@ class MedicineTransfer extends Contract {
         }
         await responseResults.close();
         return enrichedResponses;
+    }
+
+    async QueryConfirmReturn(ctx, respondingHospitalNameEN, status) {
+        return this.response.QueryConfirmReturn(ctx, respondingHospitalNameEN, status);
     }
 
     async AcceptSharing(ctx, acceptSharingData) {

@@ -57,7 +57,7 @@ class SharingFunctions {
 
         const sharing = await ctx.stub.getState(sharingId);
         const sharingData = JSON.parse(sharing);
-        sharingData.status = 'accepted';
+        sharingData.status = 'offered';
         sharingData.returnTerm = returnTerm;
         sharingData.acceptedOffer = acceptOffer;
         sharingData.updatedAt = updatedAt;
