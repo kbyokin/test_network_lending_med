@@ -266,10 +266,25 @@ class MedicineTransfer extends Contract {
 
     // Sharing Functions
     async QuerySharingStatusToHospital(ctx, queryHospital, status) {
+        // Support both single status (string) and multiple statuses (JSON array string)
+        let statusFilter;
+        try {
+            // Try to parse as JSON array
+            const statusArray = JSON.parse(status);
+            if (Array.isArray(statusArray)) {
+                statusFilter = { $in: statusArray };
+            } else {
+                statusFilter = status; // Single status
+            }
+        } catch (e) {
+            // If parsing fails, treat as single status
+            statusFilter = status;
+        }
+
         const responseQuery = {
             selector: {
                 respondingHospitalNameEN: queryHospital,
-                status: status,
+                status: statusFilter,
                 ticketType: 'sharing'
             }
         };
@@ -303,6 +318,10 @@ class MedicineTransfer extends Contract {
 
     async AcceptSharing(ctx, acceptSharingData) {
         return this.sharing.AcceptSharing(ctx, acceptSharingData);
+    }
+
+    async UpdateSharingStatus(ctx, sharingId, status, updatedAt) {
+        return this.sharing.UpdateStatus(ctx, sharingId, status, updatedAt);
     }
 
     // Medicine Functions

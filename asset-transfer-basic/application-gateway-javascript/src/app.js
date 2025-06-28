@@ -11,6 +11,10 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { TextDecoder } = require('node:util');
 
+// ============================================================================
+// CONFIGURATION
+// ============================================================================
+
 const channelName = envOrDefault('CHANNEL_NAME', 'main-channel');
 const chaincodeName = envOrDefault('CHAINCODE_NAME', 'basic');
 const mspId = envOrDefault('MSP_ID', 'hospitalaMSP');
@@ -65,8 +69,12 @@ const peerEndpoint = envOrDefault('PEER_ENDPOINT', 'localhost:7051');
 // Gateway peer SSL host name override.
 const peerHostAlias = envOrDefault('PEER_HOST_ALIAS', 'peer0.hospitala.example.com');
 
+// ============================================================================
+// CONSTANTS & DATA
+// ============================================================================
+
 const utf8Decoder = new TextDecoder();
-const assetId = `asset${String(Date.now())}`;
+const now = Date.now();
 
 const hospitalEntities = [
     {
@@ -95,13 +103,14 @@ const hospitalEntities = [
     },
 ];
 
-const now = Date.now()
 const daysFromNow = (days) => {
-    const now = Date.now();
     const futureTimeStamp = now + days * 24 * 60 * 60 * 1000;
-    // return new Date(addDays).toString();
     return futureTimeStamp.toString();
-}
+};
+
+// ============================================================================
+// MAIN APPLICATION
+// ============================================================================
 
 async function main() {
     displayInputParameters();
@@ -136,33 +145,41 @@ async function main() {
         // Get the smart contract from the network.
         const contract = network.getContract(chaincodeName);
 
+        // ============================================================================
+        // ACTIVE OPERATIONS - Uncomment/modify as needed for testing
+        // ============================================================================
+        
         // create sharing asset
-        await createSharingAsset(contract);
-        // await querySharingStatusToHospital(contract);
+        // await createSharingAsset(contract);
 
-        // Query all medicines: RichQuery
-        // console.log('*** Query all medicines:');
+        // Query sharing status to hospital
+        // await querySharingStatusToHospital(contract, 'Songkhla Hospital', 'to-transfer');
+        
+        // Query with multiple statuses (example)
+        await querySharingStatusToHospital(contract, 'Hatyai Hospital', ['pending', 're-confirm']);
+
+        // ============================================================================
+        // AVAILABLE OPERATIONS - Uncomment as needed for testing
+        // ============================================================================
+        
+        // Initialize ledger
+        // await initLedger(contract);
+
+        // Create and manage sharing assets
+        // await createSharingAsset(contract);
+        // await updateSharingStatus(contract, 'SHAR-SHARE-1751099747863-2', 'pending', 'testtime');
+
+        // Query operations
+        // await queryRequestToHospital(contract, 'Hatyai Hospital', 'pending');
+        // await queryConfirmReturn(contract, 'Na Mom Hospital', 'confirm-return');
         // await getAllAssets(contract);
 
-        // Test request flow
-        // 1: Create hospitalA request medicine to desired hospitals
-        // const createReqResult = await createRequestAsset(contract);
-        // console.log('*** createReqResult Result:', createReqResult);
-        // await readAssetByID(contract, createReqResult.requestId);
-        // // 2: hospitalB responds to hospitalA's request
-        // console.log("---> Before: hospitalB's response");
-        // const assetId = createReqResult.responsesCreated[0];
-        // await readAssetByID(contract, assetId);
-        // await updateResponseAsset(contract, assetId);
-        // console.log("---> After: hospitalB's response");
-        // await readAssetByID(contract, assetId);
-        // // 3: hospitalA approved hospitalB's response and therefore transferTransaction got created
-        // const result = await createTransferAsset(contract, assetId);
-        // console.log('*** Result:', result.transferId);
-        // 4: hospitalB updates shipment details in transferTransaction
-        // 5: hospitalA confirm delivery and therefore create returnTransaction
-        // await createReturnAsset(contract, "RESP-REQ-1748145276880-2");
-        // 6: hospitalB confirm delivery and therefore update this returnTransaction
+        // Update operations
+        // await updateConfirmReturn(contract, 'RESP-REQ-1750572718671-1', 'completed');
+
+        // Complete request flow example:
+        // await runCompleteRequestFlow(contract);
+
     } finally {
         gateway.close();
         client.close();
@@ -173,6 +190,10 @@ main().catch((error) => {
     console.error('******** FAILED to run the application:', error);
     process.exitCode = 1;
 });
+
+// ============================================================================
+// CONNECTION & IDENTITY SETUP
+// ============================================================================
 
 async function newGrpcConnection() {
     const tlsRootCert = await fs.readFile(tlsCertPath);
@@ -188,6 +209,13 @@ async function newIdentity() {
     return { mspId, credentials };
 }
 
+async function newSigner() {
+    const keyPath = await getFirstDirFileName(keyDirectoryPath);
+    const privateKeyPem = await fs.readFile(keyPath);
+    const privateKey = crypto.createPrivateKey(privateKeyPem);
+    return signers.newPrivateKeySigner(privateKey);
+}
+
 async function getFirstDirFileName(dirPath) {
     const files = await fs.readdir(dirPath);
     const file = files[0];
@@ -197,61 +225,151 @@ async function getFirstDirFileName(dirPath) {
     return path.join(dirPath, file);
 }
 
-async function newSigner() {
-    const keyPath = await getFirstDirFileName(keyDirectoryPath);
-    const privateKeyPem = await fs.readFile(keyPath);
-    const privateKey = crypto.createPrivateKey(privateKeyPem);
-    return signers.newPrivateKeySigner(privateKey);
-}
+// ============================================================================
+// LEDGER INITIALIZATION
+// ============================================================================
 
-/**
- * This type of transaction would typically only be run once by an application the first time it was started after its
- * initial deployment. A new version of the chaincode deployed later would likely not need to run an "init" function.
- */
 async function initLedger(contract) {
-    console.log(
-        '\n--> Submit Transaction: InitLedger, function creates the initial set of assets on the ledger'
-    );
-
+    console.log('\n--> Submit Transaction: InitLedger, function creates the initial set of assets on the ledger');
     await contract.submitTransaction('InitMedicines');
-
     console.log('*** Transaction committed successfully');
 }
 
-/**
- * Evaluate a transaction to query ledger state.
- */
+// ============================================================================
+// QUERY FUNCTIONS
+// ============================================================================
+
+async function querySharingStatusToHospital(contract, hospitalName, status) {
+    console.log(`\n--> Evaluate Transaction: QuerySharingStatusToHospital`);
+    console.log(`    Hospital: ${hospitalName}`);
+    console.log(`    Status: ${Array.isArray(status) ? status.join(', ') : status}`);
+    
+    // If status is an array, stringify it for the chaincode
+    const statusParam = Array.isArray(status) ? JSON.stringify(status) : status;
+    
+    const resultBytes = await contract.submitTransaction('QuerySharingStatusToHospital', hospitalName, statusParam);
+    const resultJson = utf8Decoder.decode(resultBytes);
+    const result = JSON.parse(resultJson);
+    console.log('*** Result:', JSON.stringify(result, null, 2));
+    return result;
+}
+
+async function queryRequestToHospital(contract, hospitalName, status) {
+    console.log(`\n--> Evaluate Transaction: QueryRequestToHospital - ${hospitalName}, Status: ${status}`);
+    const resultBytes = await contract.evaluateTransaction('QuerySharingStatus', hospitalName, status);
+    const resultJson = utf8Decoder.decode(resultBytes);
+    const result = JSON.parse(resultJson);
+    console.log('*** Result:', JSON.stringify(result, null, 2));
+    return result;
+}
+
+async function queryConfirmReturn(contract, respondingHospitalNameEN, status) {
+    console.log(`\n--> Evaluate Transaction: QueryConfirmReturn - ${respondingHospitalNameEN}, Status: ${status}`);
+    const resultBytes = await contract.evaluateTransaction('QueryConfirmReturn', respondingHospitalNameEN, status);
+    const resultJson = utf8Decoder.decode(resultBytes);
+    const result = JSON.parse(resultJson);
+    console.log('*** Result:', JSON.stringify(result, null, 2));
+    return result;
+}
+
 async function getAllAssets(contract) {
-    console.log(
-        '\n--> Evaluate Transaction: GetAllAssets, function returns all the current assets on the ledger'
-    );
-
-    // const resultBytes = await contract.evaluateTransaction('QueryRequestStatus');
-    const resultBytes = await contract.submitTransaction('QueryRequestToHospital', 'Na Mom Hospital', 'to-transfer');
-
+    console.log('\n--> Evaluate Transaction: GetAllAssets, function returns all the current assets on the ledger');
+    const resultBytes = await contract.evaluateTransaction('QueryRequestStatus', 'Hatyai Hospital', 'pending');
     const resultJson = utf8Decoder.decode(resultBytes);
     const result = JSON.parse(resultJson);
-    console.log(result[0].responses);
-    console.log('*** Result:', result);
+    console.log('*** Result:', JSON.stringify(result, null, 2));
+    return result;
 }
 
-async function querySharingStatusToHospital(contract) {
-    console.log(
-        '\n--> Evaluate Transaction: QuerySharingStatusToHospital'
-    );
-    const resultBytes = await contract.submitTransaction('QuerySharingStatusToHospital', 'Na Mom Hospital');
+async function readAssetByID(contract, assetId) {
+    console.log(`\n--> Evaluate Transaction: ReadAsset - ${assetId}`);
+    const resultBytes = await contract.evaluateTransaction('ReadAssetById', assetId);
     const resultJson = utf8Decoder.decode(resultBytes);
     const result = JSON.parse(resultJson);
-    console.log('*** Result:', result);
+    console.log('*** Result:', JSON.stringify(result, null, 2));
+    return result;
 }
 
-/**
- * Submit a transaction synchronously, blocking until it has been committed to the ledger.
- */
+// ============================================================================
+// UPDATE FUNCTIONS
+// ============================================================================
+
+async function updateSharingStatus(contract, sharingId, status, updatedAt) {
+    console.log(`\n--> Submit Transaction: UpdateSharingStatus - ${sharingId}, Status: ${status}`);
+    const resultBytes = await contract.submitTransaction('UpdateSharingStatus', sharingId, status, updatedAt);
+    const resultJson = utf8Decoder.decode(resultBytes);
+    const result = JSON.parse(resultJson);
+    console.log('*** Result:', JSON.stringify(result, null, 2));
+    return result;
+}
+
+async function updateConfirmReturn(contract, responseId, status) {
+    console.log(`\n--> Submit Transaction: UpdateConfirmReturn - ${responseId}, Status: ${status}`);
+    const resultBytes = await contract.submitTransaction('UpdateConfirmReturn', responseId, status);
+    const resultJson = utf8Decoder.decode(resultBytes);
+    const result = JSON.parse(resultJson);
+    console.log('*** Result:', JSON.stringify(result, null, 2));
+    return result;
+}
+
+// ============================================================================
+// CREATE FUNCTIONS
+// ============================================================================
+
+async function createSharingAsset(contract) {
+    console.log('\n--> Submit Transaction: CreateSharingAsset');
+    const sharingId = `SHAR-${now.toString()}`;
+    
+    const asset = {
+        id: sharingId,
+        postingHospitalId: hospitalEntities[0].id,
+        postingHospitalNameEN: hospitalEntities[0].nameEN,
+        postingHospitalNameTH: hospitalEntities[0].nameTH,
+        postingHospitalAddress: hospitalEntities[0].address,
+        status: 'in-progress',
+        createdAt: now.toString(),
+        updatedAt: now.toString(),
+        sharingMedicine: {
+            name: 'Paracetamol',
+            trademark: 'Adrenaline Injection',
+            quantity: 100,
+            pricePerUnit: 150,
+            unit: '1mg/1ml',
+            batchNumber: 'B12345',
+            manufacturer: 'Pharma Inc.',
+            manufactureDate: '1743572230567',
+            expiryDate: '1743572230567',
+            imageRef: 'base64encodedstring'
+        },
+        sharingReturnTerm: {
+            expectedReturnDate: daysFromNow(10),
+            receiveConditions: {
+                exactType: false,
+                subType: true,
+                otherType: true,
+                supportType: true,
+                noReturn: true,
+            }
+        }
+    };
+
+    const hospitalList = hospitalEntities.slice(1, 4); // Use entities 1-3
+    
+    const resultBytes = await contract.submitTransaction(
+        'CreateMedicineSharing',
+        JSON.stringify(asset),
+        JSON.stringify(hospitalList)
+    );
+    
+    const resultJson = utf8Decoder.decode(resultBytes);
+    const result = JSON.parse(resultJson);
+    console.log('*** Transaction committed successfully');
+    console.log('*** Result:', JSON.stringify(result, null, 2));
+    return result;
+}
+
 async function createRequestAsset(contract) {
-    console.log(
-        '\n--> Submit Transaction: CreateAsset'
-    );
+    console.log('\n--> Submit Transaction: CreateRequestAsset');
     const assetId = `REQ-${now.toString()}`;
 
     const asset = {
@@ -284,28 +402,9 @@ async function createRequestAsset(contract) {
                 notes: 'Equivalent brands also acceptable'
             }
         }
-    }
+    };
 
-    const hospitalList = [
-        {
-            nameTH: 'โีรงพยาบาลนาหม่อม',
-            nameEN: 'Na Mom Hospital',
-            id: 'namomHospitalMSP',
-            address: '456 Elm St, City B',
-        },
-        {
-            nameTH: 'โีรงพยาบาลสงขลา',
-            nameEN: 'Songkhla Hospital',
-            id: 'songkhlaHospitalMSP',
-            address: '123 Main St, City A',
-        },
-        {
-            nameTH: 'โีรงพยาบาลสิงหนคร',
-            nameEN: 'Singha Nakhon Hospital',
-            id: 'singhanakohnHospitalMSP',
-            address: '789 Oak St, City C',
-        },
-    ]
+    const hospitalList = hospitalEntities.slice(1, 4); // Use entities 1-3
 
     const resultBytes = await contract.submitTransaction(
         'CreateMedicineRequest',
@@ -315,86 +414,52 @@ async function createRequestAsset(contract) {
 
     const resultJson = utf8Decoder.decode(resultBytes);
     const result = JSON.parse(resultJson);
+    console.log('*** Transaction committed successfully');
+    console.log('*** Result:', JSON.stringify(result, null, 2));
     return result;
 }
 
-async function createSharingAsset(contract) {
-    console.log(
-        '\n--> Submit Transaction: CreateSharingAsset'
-    );
-    const sharingId = `SHAR-${now.toString()}`;
-    const asset = {
-        id: sharingId,
-        postingHospitalId: hospitalEntities[0].id,
-        postingHospitalNameEN: hospitalEntities[0].nameEN,
-        postingHospitalNameTH: hospitalEntities[0].nameTH,
-        postingHospitalAddress: hospitalEntities[0].address,
-        status: 'in-progress',
-        createdAt: now.toString(),
-        updatedAt: now.toString(),
-        sharingMedicine: {
-            name: 'Paracetamol',
-            trademark: 'Adrenaline Injection',
-            quantity: 100,
-            pricePerUnit: 150,
-            unit: '1mg/1ml',
-            batchNumber: 'B12345',
-            manufacturer: 'Pharma Inc.',
-            manufactureDate: '1743572230567',
-            expiryDate: '1743572230567',
-            imageRef: 'base64encodedstring'
-        },
-        sharingReturnTerm: {
-            expectedReturnDate: daysFromNow(10),
-            receiveConditions: {
-                exactType: false,
-                subType: true,
-                otherType: true,
-                supportType: true,
-                noReturn: true,
-            }
-        }
-    }
-    const hospitalList = [
-        {
-            nameTH: 'โีรงพยาบาลนาหม่อม',
-            nameEN: 'Na Mom Hospital',
-            id: 'namomHospitalMSP',
-            address: '456 Elm St, City B',
-        },
-        {
-            nameTH: 'โีรงพยาบาลสงขลา',
-            nameEN: 'Songkhla Hospital',
-            id: 'songkhlaHospitalMSP',
-            address: '123 Main St, City A',
-        },
-        {
-            nameTH: 'โีรงพยาบาลสิงหนคร',
-            nameEN: 'Singha Nakhon Hospital',
-            id: 'singhanakohnHospitalMSP',
-            address: '789 Oak St, City C',
-        },
-    ]
-    const resultBytes = await contract.submitTransaction(
-        'CreateMedicineSharing',
-        JSON.stringify(asset),
-        JSON.stringify(hospitalList)
-    );
-    const resultJson = utf8Decoder.decode(resultBytes);
-    const result = JSON.parse(resultJson);
-    console.log('*** Transaction committed successfully');
-    console.log('*** Result:', result);
-    return result;
+// ============================================================================
+// WORKFLOW FUNCTIONS
+// ============================================================================
+
+async function runCompleteRequestFlow(contract) {
+    console.log('\n========================================');
+    console.log('STARTING COMPLETE REQUEST FLOW');
+    console.log('========================================');
+
+    // 1: Create hospitalA request medicine to desired hospitals
+    console.log('\n--- Step 1: Create Request ---');
+    const createReqResult = await createRequestAsset(contract);
+    await readAssetByID(contract, createReqResult.requestId);
+
+    // 2: hospitalB responds to hospitalA's request
+    console.log('\n--- Step 2: Hospital Response ---');
+    const assetId = createReqResult.responsesCreated[0];
+    console.log("Before hospitalB's response:");
+    await readAssetByID(contract, assetId);
+    
+    await updateResponseAsset(contract, assetId);
+    
+    console.log("After hospitalB's response:");
+    await readAssetByID(contract, assetId);
+
+    // 3: hospitalA approved hospitalB's response and create transfer
+    console.log('\n--- Step 3: Create Transfer ---');
+    const result = await createTransferAsset(contract, assetId);
+    console.log('Transfer Result:', result.transferId);
+
+    console.log('\n========================================');
+    console.log('COMPLETE REQUEST FLOW FINISHED');
+    console.log('========================================');
 }
 
 async function updateResponseAsset(contract, assetId) {
-    console.log(
-        '\n--> Submit Transaction: UpdateResponseAsset, updates existing asset owner'
-    );
+    console.log(`\n--> Submit Transaction: UpdateResponseAsset - ${assetId}`);
     const responseAsset = {
         responseId: assetId,
         updatedAt: now.toString(),
-        status: 'in-transfer', // Next is to transfer
+        status: 'in-transfer',
         offeredMedicine: {
             name: 'Paracetamol',
             trademark: 'Adrenaline Injection',
@@ -414,94 +479,37 @@ async function updateResponseAsset(contract, assetId) {
                 notes: "please return the same unit"
             }
         },
-    }
+    };
+
     const resultBytes = await contract.submitTransaction('CreateMedicineResponse', JSON.stringify(responseAsset));
     const resultJson = utf8Decoder.decode(resultBytes);
     const result = JSON.parse(resultJson);
     console.log('*** Transaction committed successfully');
-    console.log('*** Result:', result); 
+    console.log('*** Result:', JSON.stringify(result, null, 2));
     return result;
 }
 
 async function createTransferAsset(contract, assetId) {
-    console.log(`\n--> Submit Transaction: TransferAsset`);
+    console.log(`\n--> Submit Transaction: CreateTransferAsset - ${assetId}`);
     const updatedAt = now.toString();
     const responseId = assetId;
+    
     const resultBytes = await contract.submitTransaction('CreateMedicineTransfer', responseId, updatedAt);
     const resultJson = utf8Decoder.decode(resultBytes);
     const result = JSON.parse(resultJson);
     console.log('*** Transaction committed successfully');
-    console.log('*** Result:', result);
+    console.log('*** Result:', JSON.stringify(result, null, 2));
     return result;
 }
 
-async function createReturnAsset(contract, assetId) {
-    const returnData = {
-        id: `RETR-${assetId}-${hospitalEntities[0].id}`,
-        requestId: assetId,
-        responseId: assetId,
-        fromHospitalId: hospitalEntities[0].id,
-        toHospitalId: hospitalEntities[1].id,
-        returnMedicine: {
-            name: 'test'
-        }
-    }
-    const resultBytes = await contract.submitTransaction('CreateMedicineReturn', assetId, JSON.stringify(returnData));
-    const resultJson = utf8Decoder.decode(resultBytes);
-    const result = JSON.parse(resultJson);
-    console.log('*** Transaction committed successfully');
-    console.log('*** Result:', result);
-    return result;
-}
+// ============================================================================
+// UTILITY FUNCTIONS
+// ============================================================================
 
-async function readAssetByID(contract, assetId) {
-    console.log(
-        '\n--> Evaluate Transaction: ReadAsset, function returns asset attributes'
-    );
-
-    const resultBytes = await contract.evaluateTransaction(
-        'ReadAssetById',
-        assetId
-    );
-
-    const resultJson = utf8Decoder.decode(resultBytes);
-    const result = JSON.parse(resultJson);
-    console.log('*** Result:', result);
-}
-
-/**
- * submitTransaction() will throw an error containing details of any error responses from the smart contract.
- */
-async function updateNonExistentAsset(contract) {
-    console.log(
-        '\n--> Submit Transaction: UpdateAsset asset70, asset70 does not exist and should return an error'
-    );
-
-    try {
-        await contract.submitTransaction(
-            'UpdateAsset',
-            'asset70',
-            'blue',
-            '5',
-            'Tomoko',
-            '300'
-        );
-        console.log('******** FAILED to return an error');
-    } catch (error) {
-        console.log('*** Successfully caught the error: \n', error);
-    }
-}
-
-/**
- * envOrDefault() will return the value of an environment variable, or a default value if the variable is undefined.
- */
 function envOrDefault(key, defaultValue) {
     return process.env[key] || defaultValue;
 }
 
-/**
- * displayInputParameters() will print the global scope parameters used by the main driver routine.
- */
 function displayInputParameters() {
     console.log(`channelName:       ${channelName}`);
     console.log(`chaincodeName:     ${chaincodeName}`);

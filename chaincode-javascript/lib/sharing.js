@@ -54,14 +54,24 @@ class SharingFunctions {
         const returnTerm = data.returnTerm;
         const acceptOffer = data.acceptOffer;
         const updatedAt = data.updatedAt;
+        const status = data.status;
 
         const sharing = await ctx.stub.getState(sharingId);
         const sharingData = JSON.parse(sharing);
-        sharingData.status = 'offered';
+        sharingData.status = status;
         sharingData.returnTerm = returnTerm;
         sharingData.acceptedOffer = acceptOffer;
         sharingData.updatedAt = updatedAt;
         await ctx.stub.putState(sharingId, Buffer.from(stringify(sortKeysRecursive(sharingData))));
+    }
+
+    async UpdateStatus(ctx, sharingId, status, updatedAt) {
+        const sharingBuffer = await ctx.stub.getState(sharingId);
+        const sharingData = JSON.parse(sharingBuffer);
+        sharingData.status = status;
+        sharingData.updatedAt = updatedAt;
+        await ctx.stub.putState(sharingId, Buffer.from(stringify(sortKeysRecursive(sharingData))));
+        return JSON.stringify(sharingData);
     }
 }
 
