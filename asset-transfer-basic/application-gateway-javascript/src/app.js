@@ -156,7 +156,8 @@ async function main() {
         // await querySharingStatusToHospital(contract, 'Songkhla Hospital', 'to-transfer');
         
         // Query with multiple statuses (example)
-        await querySharingStatusToHospital(contract, 'Hatyai Hospital', ['pending', 're-confirm']);
+        // await querySharingStatusToHospital(contract, 'Hatyai Hospital', ['pending', 're-confirm']);
+        // await querySharingStatus(contract, 'Songkla Hospital', 'pending');
 
         // ============================================================================
         // AVAILABLE OPERATIONS - Uncomment as needed for testing
@@ -170,12 +171,13 @@ async function main() {
         // await updateSharingStatus(contract, 'SHAR-SHARE-1751099747863-2', 'pending', 'testtime');
 
         // Query operations
-        // await queryRequestToHospital(contract, 'Hatyai Hospital', 'pending');
+        await queryToHospital(contract, 'Songkla Hospital', ['pending', 'offered'], 'request');
         // await queryConfirmReturn(contract, 'Na Mom Hospital', 'confirm-return');
         // await getAllAssets(contract);
 
         // Update operations
         // await updateConfirmReturn(contract, 'RESP-REQ-1750572718671-1', 'completed');
+        // await updateSharingStatus(contract, 'RESP-SHARE-1751128752605-4', 'offered', 'testtime');
 
         // Complete request flow example:
         // await runCompleteRequestFlow(contract);
@@ -239,23 +241,27 @@ async function initLedger(contract) {
 // QUERY FUNCTIONS
 // ============================================================================
 
-async function querySharingStatusToHospital(contract, hospitalName, status) {
+async function queryToHospital(contract, hospitalName, status, ticketType) {
     console.log(`\n--> Evaluate Transaction: QuerySharingStatusToHospital`);
     console.log(`    Hospital: ${hospitalName}`);
     console.log(`    Status: ${Array.isArray(status) ? status.join(', ') : status}`);
     
     // If status is an array, stringify it for the chaincode
     const statusParam = Array.isArray(status) ? JSON.stringify(status) : status;
-    
-    const resultBytes = await contract.submitTransaction('QuerySharingStatusToHospital', hospitalName, statusParam);
+    let resultBytes;
+    if (ticketType === 'sharing') {
+        resultBytes = await contract.evaluateTransaction('QuerySharingStatusToHospital', hospitalName, statusParam);
+    } else if (ticketType === 'request') {
+        resultBytes = await contract.evaluateTransaction('QueryRequestToHospital', hospitalName, statusParam);
+    }
     const resultJson = utf8Decoder.decode(resultBytes);
     const result = JSON.parse(resultJson);
     console.log('*** Result:', JSON.stringify(result, null, 2));
     return result;
 }
 
-async function queryRequestToHospital(contract, hospitalName, status) {
-    console.log(`\n--> Evaluate Transaction: QueryRequestToHospital - ${hospitalName}, Status: ${status}`);
+async function querySharingStatus(contract, hospitalName, status) {
+    console.log(`\n--> Evaluate Transaction: QuerySharingStatus - ${hospitalName}, Status: ${status}`);
     const resultBytes = await contract.evaluateTransaction('QuerySharingStatus', hospitalName, status);
     const resultJson = utf8Decoder.decode(resultBytes);
     const result = JSON.parse(resultJson);
