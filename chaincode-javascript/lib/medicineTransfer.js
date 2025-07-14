@@ -43,6 +43,8 @@ const hospitalEntities = [
 class MedicineTransfer extends Contract {
     constructor() {
         super();
+        this.stringify = require('json-stringify-deterministic');
+        this.sortKeysRecursive = require('sort-keys-recursive');
         this.request = new RequestFunctions();
         this.sharing = new SharingFunctions();
         this.medicine = new MedicineFunctions();
@@ -138,10 +140,22 @@ class MedicineTransfer extends Contract {
 
     // Query Functions
     async QueryRequestStatus(ctx, queryHospital, status) {
+        let statusFilter;
+        try {
+            const statusArray = JSON.parse(status);
+            if (Array.isArray(statusArray)) {
+                statusFilter = { $in: statusArray };
+            } else {
+                statusFilter = status;
+            }
+        } catch (e) {
+            statusFilter = status;
+        }
+
         const requestQuery = {
             selector: {
                 postingHospitalNameEN: queryHospital,
-                status: status,
+                status: statusFilter,
                 ticketType: 'request'
             }
         };
@@ -179,6 +193,8 @@ class MedicineTransfer extends Contract {
 
         for (const request of requests) {
             const responses = allResponses.filter(response => response.requestId === request.id);
+            const remainingAmount = await this.medicine.GetRemainingAmount(ctx, request.id);
+            request.remainingAmount = remainingAmount;
             request.responseDetails = responses;
             request.responseDetails.sort((a, b) => a.createdAt - b.createdAt);
         }
@@ -187,10 +203,22 @@ class MedicineTransfer extends Contract {
     }
 
     async QuerySharingStatus(ctx, queryHospital, status) {
+        let statusFilter;
+        try {
+            const statusArray = JSON.parse(status);
+            if (Array.isArray(statusArray)) {
+                statusFilter = { $in: statusArray };
+            } else {
+                statusFilter = status;
+            }
+        } catch (e) {
+            statusFilter = status;
+        }
+
         const sharingQuery = {
             selector: {
                 postingHospitalNameEN: queryHospital,
-                status: status,
+                status: statusFilter,
                 ticketType: 'sharing'
             }
         };
@@ -228,6 +256,8 @@ class MedicineTransfer extends Contract {
         // Attach responses to their respective sharings
         for (const sharing of sharings) {
             const responses = allResponses.filter(response => response.sharingId === sharing.id);
+            const remainingAmount = await this.medicine.GetRemainingAmount(ctx, sharing.id);
+            sharing.remainingAmount = remainingAmount;
             sharing.responseDetails = responses;
             sharing.responseDetails.sort((a, b) => a.createdAt - b.createdAt);
         }
@@ -334,6 +364,10 @@ class MedicineTransfer extends Contract {
         return enrichedResponses;
     }
 
+    async GetRemainingAmount(ctx, id) {
+        return this.medicine.GetRemainingAmount(ctx, id);
+    }
+
     async QueryConfirmReturn(ctx, respondingHospitalNameEN, status) {
         return this.response.QueryConfirmReturn(ctx, respondingHospitalNameEN, status);
     }
@@ -344,6 +378,10 @@ class MedicineTransfer extends Contract {
 
     async UpdateSharingStatus(ctx, sharingId, status, updatedAt) {
         return this.sharing.UpdateStatus(ctx, sharingId, status, updatedAt);
+    }
+
+    async UpdateTicketStatus(ctx, id, status, updatedAt) {
+        return this.medicine.UpdateTicketStatus(ctx, id, status, updatedAt);
     }
 
     // Medicine Functions

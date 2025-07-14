@@ -64,6 +64,13 @@ class RequestFunctions {
             responsesCreated: hospitals.map(h => `RESP-${data.id}-${h.id}`)
         });
     }
+
+    async UpdateSharingStatus(ctx, id, status) {
+        const request = await ctx.stub.getState(id);
+        const requestData = JSON.parse(request);
+        requestData.status = status;
+        await ctx.stub.putState(id, Buffer.from(stringify(sortKeysRecursive(requestData))));
+    }
 }
 
 module.exports = RequestFunctions;

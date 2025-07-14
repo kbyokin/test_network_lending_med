@@ -122,6 +122,65 @@ class MedicineFunctions {
         return oldOwner;
     }
 
+    async GetRemainingAmount(ctx, id) {
+        const assetString = await this.ReadMedicine(ctx, id); // this should return the original ticket
+        const asset = JSON.parse(assetString);
+
+        const status = ['to-transfer', 'in-transfer', 'to-confirm', 'in-return', 'to-return', 'in-transfer', 'completed'];
+
+        // Compose the query based on ticket type
+        const querySelector = asset.ticketType === 'sharing'
+            ? { selector: { sharingId: id, status: { $in: status } } }
+            : { selector: { requestId: id, status: { $in: status } } };
+
+        const iterator = await ctx.stub.getQueryResult(JSON.stringify(querySelector));
+
+        let totalResponseAmount = 0;
+
+        while (true) {
+            const res = await iterator.next();
+            if (res.value && res.value.value.toString()) {
+                const response = JSON.parse(res.value.value.toString('utf8'));
+
+                // Depending on ticket type, pick the right field
+                const amount = asset.ticketType === 'sharing'
+                    ? (response.acceptedOffer !== null && response.acceptedOffer !== undefined ? response.acceptedOffer.responseAmount || 0 : 0)
+                    : (response.offeredMedicine !== null && response.offeredMedicine !== undefined ? response.offeredMedicine.offerAmount || 0 : 0);
+
+                totalResponseAmount += Number(amount);
+            }
+
+            if (res.done) {
+                break;
+            }
+        }
+
+        await iterator.close();
+
+        // Calculate remaining amount
+        const originalAmount = asset.ticketType === 'sharing'
+            ? Number(asset.sharingMedicine.sharingAmount)
+            : Number(asset.requestMedicine.requestAmount);
+
+        const remainingAmount = originalAmount - totalResponseAmount;
+
+        // add remaining amount to the asset
+        // asset.remainingAmount = remainingAmount;
+        // await ctx.stub.putState(id, Buffer.from(stringify(sortKeysRecursive(asset))));
+
+        return remainingAmount;
+    }
+
+    async UpdateTicketStatus(ctx, id, status, updatedAt) {
+        const data = await ctx.stub.getState(id);
+        const parsedData = JSON.parse(data);
+        parsedData.status = status;
+        parsedData.updatedAt = updatedAt;
+        await ctx.stub.putState(id, Buffer.from(stringify(sortKeysRecursive(parsedData))));
+        return JSON.stringify(parsedData);
+    }
+
+
     async GetAllMedicines(ctx) {
         const allResults = [];
         const iterator = await ctx.stub.getStateByRange('', '');
@@ -142,4 +201,4 @@ class MedicineFunctions {
     }
 }
 
-module.exports = MedicineFunctions; 
+module.exports = MedicineFunctions;
