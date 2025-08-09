@@ -199,6 +199,49 @@ class MedicineFunctions {
         }
         return JSON.stringify(allResults);
     }
+
+    async GetHospitalTransactions(ctx, hospitalNameEN) {
+        const selector = {
+            selector: {
+                $or: [
+                    { postingHospitalNameEN: hospitalNameEN },
+                    { respondingHospitalNameEN: hospitalNameEN }
+                ]
+            }
+        };
+
+        const iterator = await ctx.stub.getQueryResult(JSON.stringify(selector));
+        const allResults = [];
+
+        let result = await iterator.next();
+        while (!result.done) {
+            const record = JSON.parse(result.value.value.toString('utf8'));
+            allResults.push(record);
+            result = await iterator.next();
+        }
+        await iterator.close();
+
+        // Group by status
+        const grouped = {};
+        for (const tx of allResults) {
+            const status = tx.status || 'unknown';
+            if (!grouped[status]) {
+                grouped[status] = [];
+            }
+            grouped[status].push(tx);
+        }
+
+        // Convert grouped object to array
+        const resultArray = Object.keys(grouped).map(status => ({
+            status: status,
+            length: grouped[status].length,
+            transactions: grouped[status],
+        }));
+
+        return JSON.stringify(resultArray);
+    }
+
+
 }
 
 module.exports = MedicineFunctions;

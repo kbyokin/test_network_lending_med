@@ -20,7 +20,8 @@ class SharingFunctions {
             createdAt: data.createdAt,
             sharingMedicine: data.sharingMedicine,
             sharingReturnTerm: data.sharingReturnTerm,
-            ticketType: 'sharing'
+            ticketType: 'sharing',
+            sharingMedicineImage: data.sharingMedicineImage,
         };
         await ctx.stub.putState(sharing.id, Buffer.from(stringify(sortKeysRecursive(sharing))));
         // create a response for each hospital

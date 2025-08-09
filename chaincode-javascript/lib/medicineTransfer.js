@@ -368,6 +368,10 @@ class MedicineTransfer extends Contract {
         return this.medicine.GetRemainingAmount(ctx, id);
     }
 
+    async GetHistoryTransactions(ctx, hospitalName) {
+        return this.medicine.GetHospitalTransactions(ctx, hospitalName);
+    }
+
     async QueryConfirmReturn(ctx, respondingHospitalNameEN, status) {
         return this.response.QueryConfirmReturn(ctx, respondingHospitalNameEN, status);
     }
