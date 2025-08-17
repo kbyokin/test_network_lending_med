@@ -1,2 +1,5 @@
 wallet
 !wallet/.gitkeep
+./channel-artifacts
+./bin/*
+./basic.tar.gz
