@@ -27,7 +27,9 @@ class RequestFunctions {
                 trademark: data.requestMedicine.trademark,
                 manufacturer: data.requestMedicine.manufacturer,
                 pricePerUnit: data.requestMedicine.pricePerUnit,
-                imageRef: data.requestMedicine.imageRef
+                imageRef: data.requestMedicine.imageRef,
+                description: data.requestMedicine.description,
+                requestMedicineImage: data.requestMedicineImage,
             },
             requestTerm: {
                 expectedReturnDate: data.requestTerm.expectedReturnDate,

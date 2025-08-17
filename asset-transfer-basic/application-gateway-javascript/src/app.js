@@ -171,7 +171,7 @@ async function main() {
         // await updateSharingStatus(contract, 'SHAR-SHARE-1751099747863-2', 'pending', 'testtime');
 
         // Query operations
-        await queryToHospital(contract, 'Songkla Hospital', ['pending', 'offered'], 'request');
+        //await queryToHospital(contract, 'Na Mom Hospital', ['pending', 'offered'], 'sharing');
         // await queryConfirmReturn(contract, 'Na Mom Hospital', 'confirm-return');
         // await getAllAssets(contract);
 
