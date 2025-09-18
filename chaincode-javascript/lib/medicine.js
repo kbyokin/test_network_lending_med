@@ -126,7 +126,7 @@ class MedicineFunctions {
         const assetString = await this.ReadMedicine(ctx, id); // this should return the original ticket
         const asset = JSON.parse(assetString);
 
-        const status = ['to-transfer', 'in-transfer', 'to-confirm', 'in-return', 'to-return', 'in-transfer', 'completed', 'returned'];
+        const status = ['to-transfer', 'in-transfer', 'to-confirm', 'in-return', 'confirm-return', 'to-return', 'in-transfer', 'completed', 'returned'];
 
         // Compose the query based on ticket type
         const querySelector = asset.ticketType === 'sharing'
