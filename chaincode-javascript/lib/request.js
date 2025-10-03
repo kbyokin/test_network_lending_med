@@ -19,25 +19,37 @@ class RequestFunctions {
             createdAt: data.createdAt,
             updatedAt: data.updatedAt,
             urgent: data.urgent,
+            // optional top-level description mirroring UI payload
+            description: data.description,
             requestMedicine: {
-                name: data.requestMedicine.name,
-                requestAmount: data.requestMedicine.requestAmount,
-                quantity: data.requestMedicine.quantity,
-                unit: data.requestMedicine.unit,
-                trademark: data.requestMedicine.trademark,
-                manufacturer: data.requestMedicine.manufacturer,
-                pricePerUnit: data.requestMedicine.pricePerUnit,
-                imageRef: data.requestMedicine.imageRef,
-                description: data.requestMedicine.description,
-                requestMedicineImage: data.requestMedicineImage,
+                name: data.requestMedicine && data.requestMedicine.name,
+                requestAmount: data.requestMedicine && data.requestMedicine.requestAmount,
+                quantity: data.requestMedicine && data.requestMedicine.quantity,
+                unit: data.requestMedicine && data.requestMedicine.unit,
+                trademark: data.requestMedicine && data.requestMedicine.trademark,
+                manufacturer: data.requestMedicine && data.requestMedicine.manufacturer,
+                pricePerUnit: data.requestMedicine && data.requestMedicine.pricePerUnit,
+                description: data.requestMedicine && data.requestMedicine.description,
             },
-            requestTerm: {
-                expectedReturnDate: data.requestTerm.expectedReturnDate,
-                receiveConditions: {
-                    condition: data.requestTerm.receiveConditions.condition,
-                    supportType: data.requestTerm.receiveConditions.supportType
-                }
-            },
+            // image is provided as Base64 data URL at the top-level now
+            requestMedicineImage: (typeof data.requestMedicineImage !== 'undefined') ? data.requestMedicineImage : null,
+            requestTerm: (function () {
+                const hasRequestTerm = !!data.requestTerm;
+                const hasSupport = hasRequestTerm && !!data.requestTerm.supportCondition;
+                return {
+                    expectedReturnDate: hasRequestTerm ? data.requestTerm.expectedReturnDate : undefined,
+                    returnType: hasRequestTerm ? data.requestTerm.returnType : undefined,
+                    receiveConditions: {
+                        condition: (hasRequestTerm && data.requestTerm.receiveConditions) ? data.requestTerm.receiveConditions.condition : undefined,
+                    },
+                    // If supportCondition is selected, returnConditions must be null
+                    returnConditions: hasSupport ? null : {
+                        condition: (hasRequestTerm && data.requestTerm.returnConditions) ? data.requestTerm.returnConditions.condition : undefined,
+                        otherTypeSpecification: (hasRequestTerm && data.requestTerm.returnConditions) ? data.requestTerm.returnConditions.otherTypeSpecification : undefined,
+                    },
+                    supportCondition: hasRequestTerm ? data.requestTerm.supportCondition : undefined,
+                };
+            })(),
             ticketType: 'request'
         };
 
