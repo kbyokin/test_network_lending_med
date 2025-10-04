@@ -71,13 +71,16 @@ class TransferFunctions {
         }
         returnList.push(returnAsset);
 
-        // Calculate total returned amount across all return entries
-        const totalReturned = returnList.reduce((sum, item) => {
+        // Calculate total returned price across all return entries: sum(returnAmount * pricePerUnit)
+        const totalReturnPrice = returnList.reduce((sum, item) => {
             try {
                 const nested = item && item.returnMedicine ? item.returnMedicine : item;
                 const rawAmt = nested && nested.returnAmount !== undefined && nested.returnAmount !== null ? nested.returnAmount : 0;
+                const rawPrice = nested && nested.pricePerUnit !== undefined && nested.pricePerUnit !== null ? nested.pricePerUnit : 0;
                 const amt = Number(rawAmt);
-                return sum + (isNaN(amt) ? 0 : amt);
+                const unitPrice = Number(rawPrice);
+                const lineTotal = (isNaN(amt) || isNaN(unitPrice)) ? 0 : (amt * unitPrice);
+                return sum + lineTotal;
             } catch (e) {
                 return sum;
             }
@@ -93,8 +96,20 @@ class TransferFunctions {
                     : 0
         );
 
-        // Only set status to 'confirm-return' when fully returned; otherwise keep existing status
-        if (offeredAmount > 0 && totalReturned >= offeredAmount) {
+        // Determine unit price from the original offer (fallback to acceptedOffer when applicable)
+        const offeredUnitPrice = Number(
+            responseAsset && responseAsset.offeredMedicine && responseAsset.offeredMedicine.pricePerUnit !== undefined
+                ? responseAsset.offeredMedicine.pricePerUnit
+                : responseAsset && responseAsset.acceptedOffer && responseAsset.acceptedOffer.pricePerUnit !== undefined
+                    ? responseAsset.acceptedOffer.pricePerUnit
+                    : 0
+        );
+
+        // Calculate original total price and compare against total returned price
+        const originalTotalPrice = (isNaN(offeredAmount) || isNaN(offeredUnitPrice)) ? 0 : (offeredAmount * offeredUnitPrice);
+
+        // Only set status to 'confirm-return' when fully returned by price; otherwise keep existing status
+        if (originalTotalPrice > 0 && totalReturnPrice >= originalTotalPrice) {
             responseAsset.status = 'confirm-return';
         }
 
