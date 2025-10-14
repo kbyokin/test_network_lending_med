@@ -40,18 +40,18 @@ class RequestFunctions {
                     expectedReturnDate: hasRequestTerm ? data.requestTerm.expectedReturnDate : undefined,
                     returnType: hasRequestTerm ? data.requestTerm.returnType : undefined,
                     receiveConditions: {
-                        condition: (hasRequestTerm && data.requestTerm.receiveConditions) ? data.requestTerm.receiveConditions.condition : undefined,
+                        condition: (hasRequestTerm && data.requestTerm.receiveConditions) ? data.requestTerm.receiveConditions.condition : data.requestTerm.receiveConditions.condition,
                     },
-                    // If supportCondition is selected, returnConditions must be null
-                    returnConditions: hasSupport ? null : {
-                        condition: (hasRequestTerm && data.requestTerm.returnConditions) ? data.requestTerm.returnConditions.condition : undefined,
-                        otherTypeSpecification: (hasRequestTerm && data.requestTerm.returnConditions) ? data.requestTerm.returnConditions.otherTypeSpecification : undefined,
+                    returnConditions:  {
+                        condition: (hasRequestTerm && data.requestTerm.returnConditions) ? data.requestTerm.returnConditions.condition : data.requestTerm.returnConditions.condition,
+                        otherTypeSpecification: (hasRequestTerm && data.requestTerm.returnConditions) ? data.requestTerm.returnConditions.otherTypeSpecification : data.requestTerm.returnConditions.otherTypeSpecification,
                     },
                     supportCondition: hasRequestTerm ? data.requestTerm.supportCondition : undefined,
                 };
             })(),
             ticketType: 'request'
         };
+        
 
         await ctx.stub.putState(request.id, Buffer.from(stringify(sortKeysRecursive(request))));
         // Create a response request for each hospital
