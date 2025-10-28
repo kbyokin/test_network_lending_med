@@ -30,6 +30,7 @@ class RequestFunctions {
                 manufacturer: data.requestMedicine && data.requestMedicine.manufacturer,
                 pricePerUnit: data.requestMedicine && data.requestMedicine.pricePerUnit,
                 description: data.requestMedicine && data.requestMedicine.description,
+                packingSize : data.requestMedicine && data.requestMedicine.packingSize
             },
             // image is provided as Base64 data URL at the top-level now
             requestMedicineImage: (typeof data.requestMedicineImage !== 'undefined') ? data.requestMedicineImage : null,
